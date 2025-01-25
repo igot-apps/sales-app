@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Report</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sales Report</h1>
+  <div>
+    <h2>Average Quantity Sold per Item (per day) by Date</h2>
+    <table id="avg-quantity-report">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Item Name</th>
+          <th>Average Quantity (kg)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h2>Top Selling Items</h2>
+    <table id="top-selling-report">
+      <thead>
+        <tr>
+          <th>Item Name</th>
+          <th>Total Quantity Sold (kg)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h2>Date-wise Sales Report</h2>
+    <table id="date-wise-report">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Item Name</th>
+          <th>Total Quantity Sold (kg)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Sample data from localStorage
+      const receiptHistory = JSON.parse(localStorage.getItem("receiptHistory") || "[]");
+
+      // Function to parse receipt data and aggregate sales
+      const aggregateSalesData = () => {
+        const salesData = {};
+
+        receiptHistory.forEach(receipt => {
+          const date = new Date(receipt.date);
+          const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`; // YYYY-MM-DD
+
+          receipt.items.forEach(item => {
+            if (!salesData[item.name]) {
+              salesData[item.name] = { totalQuantity: 0, totalPrice: 0, salesDates: {} };
+            }
+
+            // Add quantities
+            const quantity = parseFloat(item.quantity);
+            salesData[item.name].totalQuantity += quantity;
+
+            // Track daily sales
+            if (!salesData[item.name].salesDates[formattedDate]) {
+              salesData[item.name].salesDates[formattedDate] = 0;
+            }
+            salesData[item.name].salesDates[formattedDate] += quantity;
+          });
+        });
+
+        return salesData;
+      };
+
+      // Function to calculate the average quantity sold per item per day (for each date)
+      const calculateAverageQuantityPerDate = (salesData) => {
+        const avgData = [];
+
+        for (const item in salesData) {
+          const itemData = salesData[item];
+          for (const date in itemData.salesDates) {
+            const avgQuantity = itemData.salesDates[date]; // No need to divide since it's per day already
+            avgData.push({ date, name: item, avgQuantity });
+          }
+        }
+
+        return avgData;
+      };
+
+      // Function to rank the most sold items
+      const rankTopSellingItems = (salesData) => {
+        const rankingData = [];
+
+        for (const item in salesData) {
+          const itemData = salesData[item];
+          rankingData.push({ name: item, totalQuantity: itemData.totalQuantity });
+        }
+
+        // Sort by total quantity sold in descending order
+        rankingData.sort((a, b) => b.totalQuantity - a.totalQuantity);
+
+        return rankingData;
+      };
+
+      // Function to generate Date-wise Sales Report
+      const generateDateWiseReport = () => {
+        const dateWiseData = {};
+
+        receiptHistory.forEach(receipt => {
+          const date = new Date(receipt.date);
+          const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`; // YYYY-MM-DD
+
+          receipt.items.forEach(item => {
+            if (!dateWiseData[formattedDate]) {
+              dateWiseData[formattedDate] = {};
+            }
+
+            if (!dateWiseData[formattedDate][item.name]) {
+              dateWiseData[formattedDate][item.name] = 0;
+            }
+
+            // Add quantities sold for this item on this date
+            dateWiseData[formattedDate][item.name] += parseFloat(item.quantity);
+          });
+        });
+
+        return dateWiseData;
+      };
+
+      // Function to update the report tables
+      const updateReportTables = () => {
+        const salesData = aggregateSalesData();
+        const avgQuantityData = calculateAverageQuantityPerDate(salesData);
+        const topSellingData = rankTopSellingItems(salesData);
+        const dateWiseData = generateDateWiseReport();
+
+        // Update Average Quantity Report (per date)
+        const avgQuantityTableBody = document.querySelector("#avg-quantity-report tbody");
+        avgQuantityData.forEach(item => {
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${item.date}</td><td>${item.name}</td><td>${item.avgQuantity.toFixed(2)}</td>`;
+          avgQuantityTableBody.appendChild(row);
+        });
+
+        // Update Top Selling Report
+        const topSellingTableBody = document.querySelector("#top-selling-report tbody");
+        topSellingData.forEach(item => {
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${item.name}</td><td>${item.totalQuantity.toFixed(2)}</td>`;
+          topSellingTableBody.appendChild(row);
+        });
+
+        // Update Date-wise Sales Report
+        const dateWiseTableBody = document.querySelector("#date-wise-report tbody");
+        for (const date in dateWiseData) {
+          for (const item in dateWiseData[date]) {
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${date}</td><td>${item}</td><td>${dateWiseData[date][item].toFixed(2)}</td>`;
+            dateWiseTableBody.appendChild(row);
+          }
+        }
+      };
+
+      // Initialize the report
+      updateReportTables();
+    });
+  </script>
+</body>
+</html>

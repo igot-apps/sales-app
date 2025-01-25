@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f4f4f4;
+        }
+        
+        select {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        
+        button {
+            padding: 5px 10px;
+            margin-top: 5px;
+            cursor: pointer;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+        }
+
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        .clear-storage-btn {
+            background-color: #d9534f;
+        }
+
+        .clear-storage-btn:hover {
+            background-color: #c9302c;
+        }
+
+        .add-btn {
+            background-color: #333333;
+        }
+
+        .add-btn:hover {
+            background-color: #2c3333;
+        }
+        
+        #inventory-list tr {
+            border-bottom: 1px solid #ccc;
+        }
+        
+        #inventory-list tr:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 600px) {
+            table {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Inventory Management</h2>
+
+<!-- Button to show/hide the add new inventory form -->
+<button type="button" class="add-btn" onclick="toggleAddForm()">Add New Inventory Item</button>
+
+<!-- Button to clear local storage -->
+<button type="button" class="clear-storage-btn" onclick="clearLocalStorage()">Clear Local Storage</button>
+
+<!-- Table to display inventory list -->
+<table id="inventory-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Price</th>
+            <th>Stock (kg or pcs)</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="inventory-list"></tbody>
+</table>
+
+<script>
+    // Function to load inventory from local storage
+    function loadInventory() {
+        const inventoryData = localStorage.getItem('store-stocks'); // Use 'store-stocks' key
+        return inventoryData ? JSON.parse(inventoryData) : [];
+    }
+
+    // Function to display the inventory list
+    function displayInventory() {
+        const inventory = loadInventory();
+        const inventoryListElement = document.getElementById('inventory-list');
+        inventoryListElement.innerHTML = '';
+
+        inventory.forEach((item, index) => {
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td><input type="text" value="${item.productName}" id="name-${index}" onblur="updateInventory(${index})"></td>
+                <td>
+                    <select id="type-${index}" onblur="updateInventory(${index})">
+                        <option value="">Choose Type</option>
+                        <option value="scaled" ${item.productType === 'scaled' ? 'selected' : ''}>Scaled Type</option>
+                        <option value="unscaled" ${item.productType === 'unscaled' ? 'selected' : ''}>Unscaled Type</option>
+                    </select>
+                </td>
+                <td><input type="number" value="${item.productPrice}" id="price-${index}" onblur="updateInventory(${index})"></td>
+                <td><input type="number" value="${item.productStock}" id="stock-${index}" onblur="updateInventory(${index})"></td>
+                <td>
+                    <button onclick="updateInventory(${index})">Update</button>
+                    <button class="delete-btn" onclick="deleteInventory(${index})">Delete</button>
+                </td>
+            `;
+
+            inventoryListElement.appendChild(row);
+        });
+
+        // Add an extra row to the table for adding new inventory items
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td>
+                <input type="text" id="new-name" placeholder="Product Name">
+            </td>
+            <td>
+                <select id="new-type">
+                    <option value="">Choose Type</option>
+                    <option value="scaled">Scaled Type</option>
+                    <option value="unscaled">Unscaled Type</option>
+                </select>
+            </td>
+            <td>
+                <input type="number" id="new-price" placeholder="Price">
+            </td>
+            <td>
+                <input type="number" id="new-stock" placeholder="Stock">
+            </td>
+            <td>
+                <button class="add-btn" onclick="addNewInventoryItem()">Add</button>
+            </td>
+        `;
+
+        inventoryListElement.appendChild(newRow);
+    }
+
+    // Function to update inventory in local storage
+    function updateInventory(index) {
+        const inventory = loadInventory();
+        const name = document.getElementById(`name-${index}`).value;
+        const type = document.getElementById(`type-${index}`).value;
+        const price = parseFloat(document.getElementById(`price-${index}`).value);
+        const stock = parseInt(document.getElementById(`stock-${index}`).value, 10);
+
+        inventory[index] = { productName: name, productType: type, productPrice: price, productStock: stock };
+        localStorage.setItem('store-stocks', JSON.stringify(inventory)); // Save to 'store-stocks'
+    }
+
+    // Function to delete an item from the inventory
+    function deleteInventory(index) {
+        const inventory = loadInventory();
+        inventory.splice(index, 1);
+        localStorage.setItem('store-stocks', JSON.stringify(inventory)); // Save to 'store-stocks'
+        displayInventory();
+    }
+
+    // Function to add a new inventory item
+    function addNewInventoryItem() {
+        const inventory = loadInventory();
+        const newName = document.getElementById('new-name').value;
+        const newType = document.getElementById('new-type').value;
+        const newPrice = parseFloat(document.getElementById('new-price').value);
+        const newStock = parseInt(document.getElementById('new-stock').value, 10);
+
+        if (!newName || isNaN(newPrice) || isNaN(newStock) || newType === "") {
+            alert('Please fill in all fields with valid data.');
+            return;
+        }
+
+        const newItem = { productName: newName, productType: newType, productPrice: newPrice, productStock: newStock };
+        inventory.push(newItem);
+        localStorage.setItem('store-stocks', JSON.stringify(inventory)); // Save to 'store-stocks'
+        displayInventory();
+        document.getElementById('new-name').value = '';
+        document.getElementById('new-type').value = '';
+        document.getElementById('new-price').value = '';
+        document.getElementById('new-stock').value = '';
+    }
+
+    // Function to toggle the visibility of the add new inventory form
+    function toggleAddForm() {
+        const addFormRow = document.getElementById('inventory-table').rows[document.getElementById('inventory-table').rows.length - 1];
+        if (addFormRow.style.display === 'block') {
+            addFormRow.style.display = 'none';
+        } else {
+            addFormRow.style.display = 'block';
+        }
+    }
+
+    // Function to clear local storage
+    function clearLocalStorage() {
+        localStorage.removeItem('store-stocks'); // Clear 'store-stocks'
+        displayInventory();
+    }
+
+    // Initial call to display the inventory list when the page loads
+    displayInventory();
+</script>
+
+<!-- Code injected by live-server -->
+<script>
+    // <![CDATA[  <-- For SVG support
+    if ('WebSocket' in window) {
+        (function () {
+            function refreshCSS() {
+                var sheets = [].slice.call(document.getElementsByTagName("link"));
+                var head = document.getElementsByTagName("head")[0];
+                for (var i = 0; i < sheets.length; ++i) {
+                    var elem = sheets[i];
+                    var parent = elem.parentElement || head;
+                    parent.removeChild(elem);
+                    var rel = elem.rel;
+                    if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+                        var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+                        elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+                    }
+                    parent.appendChild(elem);
+                }
+            }
+            var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+            var address = protocol + window.location.host + window.location.pathname + '/ws';
+            var socket = new WebSocket(address);
+            socket.onmessage = function (msg) {
+                if (msg.data == 'reload') window.location.reload();
+                else if (msg.data == 'refreshcss') refreshCSS();
+            };
+            if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+                console.log('Live reload enabled.');
+                sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+            }
+        })();
+    }
+    else {
+        console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+    }
+    // ]]>
+</script>
+</body>
+
+</html>

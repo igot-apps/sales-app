@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalStorage Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input {
+            margin: 5px;
+            padding: 10px;
+            width: calc(50% - 16px);
+        }
+        button {
+            padding: 10px;
+            margin-left: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>LocalStorage Viewer</h1>
+    <form id="storageForm">
+        <input type="text" id="key" placeholder="Enter key" required>
+        <input type="text" id="value" placeholder="Enter value" required>
+        <button type="submit">Add to LocalStorage</button>
+    </form>
+
+    <div class="error" id="error-message"></div>
+
+    <table id="storageTable">
+        <thead>
+            <tr>
+                <th>Key</th>
+                <th>Value</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="storageTableBody">
+            <!-- Stored items will appear here -->
+        </tbody>
+    </table>
+
+    <div id="editForm" style="display: none;">
+        <input type="hidden" id="editKey" value="">
+        <input type="text" id="editValue" value="" placeholder="Enter new value">
+        <button type="button" id="saveChanges">Save Changes</button>
+        <button type="button" id="cancelChanges">Cancel</button>
+    </div>
+
+    <script>
+        const storageForm = document.getElementById('storageForm');
+        const storageTableBody = document.getElementById('storageTableBody');
+        const errorMessage = document.getElementById('error-message');
+        const editForm = document.getElementById('editForm');
+        const saveChangesButton = document.getElementById('saveChanges');
+        const cancelChangesButton = document.getElementById('cancelChanges');
+        let currentKeyToEdit = '';
+
+        // Function to display all localStorage items in the table
+        function displayLocalStorage() {
+            // Clear existing rows
+            storageTableBody.innerHTML = '';
+
+            // Loop through all localStorage items
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                const newRow = storageTableBody.insertRow();
+                newRow.insertCell(0).textContent = key;
+                newRow.insertCell(1).textContent = value;
+
+                // Add update button
+                const updateButton = document.createElement('button');
+                updateButton.textContent = 'Update';
+                updateButton.onclick = function() {
+                    editForm.style.display = 'block';
+                    document.getElementById('editKey').value = key;
+                    document.getElementById('editValue').value = value;
+                    currentKeyToEdit = key; // Store the key for editing
+                };
+                newRow.insertCell(2).appendChild(updateButton);
+
+                // Add delete button
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.style.backgroundColor = 'pink';
+                deleteButton.style.color = 'white';
+                deleteButton.onclick = function() {
+                    localStorage.removeItem(key);
+                    displayLocalStorage();
+                };
+                newRow.insertCell(2).appendChild(deleteButton);
+            }
+        }
+
+        // Add event listener for the form submission
+        storageForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form submission
+
+            const key = document.getElementById('key').value.trim();
+            const value = document.getElementById('value').value.trim();
+
+            // Clear previous error message
+            errorMessage.textContent = '';
+
+            // Basic validation
+            if (!key || !value) {
+                errorMessage.textContent = 'Both key and value are required!';
+                return;
+            }
+
+            // Store key-value pair in localStorage
+            localStorage.setItem(key, value);
+
+            // Reset form
+            storageForm.reset();
+
+            // Display all localStorage items
+            displayLocalStorage();
+        });
+
+        // Save changes to localStorage
+        saveChangesButton.addEventListener('click', function() {
+            const editValue = document.getElementById('editValue').value.trim();
+            localStorage.setItem(currentKeyToEdit, editValue);
+            displayLocalStorage();
+            editForm.style.display = 'none';
+        });
+
+        // Cancel changes
+        cancelChangesButton.addEventListener('click', function() {
+            editForm.style.display = 'none';
+        });
+
+        // Display items on page load
+        displayLocalStorage();
+    </script>
+</body>
+</html>
