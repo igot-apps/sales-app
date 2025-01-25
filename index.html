@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frozen Food Retail Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table th,
+        table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        table th {
+            background-color: #333;
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        #receipt,
+        #receiptHistory {
+            background-color: white;
+            padding: 15px;
+            border: 1px solid #ddd;
+            margin-top: 20px;
+        }
+
+        #receipt h3,
+        #receiptHistory h3 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Frozen Food Retail Management</h1>
+    </header>
+    <div class="container">
+        <h2>Add Product</h2>
+        <div class="form-group">
+            <label for="productName">Product Name:</label>
+            <select id="productName" required>
+                <option value="">Select Product Name</option>
+                <option value="Fish">Fish</option>
+                <option value="Meat">Meat</option>
+                <option value="Vegetables">Vegetables</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="productType">Product Type:</label>
+            <select id="productType">
+                <option value="scaled">Scaled (Kg)</option>
+                <option value="unscaled">Unscaled (Units)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="productPrice">Price (GHS):</label>
+            <input type="number" id="productPrice" placeholder="Enter price">
+        </div>
+        <div class="form-group">
+            <label for="productStock">Initial Stock:</label>
+            <input type="number" id="productStock" placeholder="Enter initial stock">
+        </div>
+        <button onclick="addProduct()">Add Product</button>
+
+        <h2>Top Up Stock</h2>
+        <div class="form-group">
+            <label for="topUpProduct">Select Product:</label>
+            <select id="topUpProduct"></select>
+        </div>
+        <div class="form-group">
+            <label for="topUpAmount">Top Up Amount:</label>
+            <input type="number" id="topUpAmount" placeholder="Enter top-up amount">
+        </div>
+        <button onclick="topUpStock()">Top Up</button>
+
+        <h2>Store Stocks</h2>
+        <table id="inventoryTable">
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Product Type</th>
+                    <th>Price (GHS)</th>
+                    <th>Total Stock</th>
+                    <th>Purchase Amount (GHS)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h2>Receipt</h2>
+        <div id="receipt">
+            <h3>Receipt</h3>
+            <ul id="receiptItems"></ul>
+            <p id="receiptTotal">Total: GHS 0.00</p>
+            <div class="form-group">
+                <label for="receiptLabel">Optional Label for Receipt:</label>
+                <input type="text" id="receiptLabel" placeholder="Enter label (e.g., customer name, reference)">
+            </div>
+            <button onclick="checkout()">Checkout</button>
+        </div>
+
+        <h2>Receipt History</h2>
+        <button onclick="toggleReceiptHistory()">Show/Hide Receipt History</button>
+        <div id="receiptHistory" style="display: none;">
+            <h3>All Receipts</h3>
+            <ul id="allReceipts"></ul>
+        </div>
+    </div>
+
+    <script>
+        let inventory = [];
+        let receiptItems = [];
+        let receiptHistory = [];
+
+        window.onload = function () {
+            loadPersistedData();
+            populateProductNameOptions();
+        };
+
+        function loadPersistedData() {
+            const savedInventory = localStorage.getItem('store-stocks');
+            const savedHistory = localStorage.getItem('receiptHistory');
+
+            if (savedInventory) {
+                try {
+                    inventory = JSON.parse(savedInventory);
+                } catch (error) {
+                    console.error("Failed to parse inventory data from localStorage", error);
+                    inventory = [];
+                }
+                renderInventory();
+                populateTopUpOptions();
+            }
+
+            if (savedHistory) {
+                try {
+                    receiptHistory = JSON.parse(savedHistory);
+                } catch (error) {
+                    console.error("Failed to parse receipt history from localStorage", error);
+                    receiptHistory = [];
+                }
+                renderReceiptHistory();
+            }
+        }
+
+        function renderInventory() {
+            const tableBody = document.querySelector('#inventoryTable tbody');
+            tableBody.innerHTML = '';
+
+            inventory.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.productName}</td>
+                    <td>${item.productType === 'scaled' ? 'Scaled (Kg)' : 'Unscaled (Units)'}</td>
+                    <td>${item.productPrice !== undefined ? parseFloat(item.productPrice).toFixed(2) : "0.00"}</td>
+                    <td>${item.totalStock.toFixed(2)}</td>
+                    <td><input type="number" min="0" placeholder="GHS" id="purchaseAmount${index}"></td>
+                    <td>
+                        <button data-index="${index}" class="add-to-receipt-btn">Add to Receipt</button>
+                        <button class="transfer-btn" onclick="prepareTransfer(${index})">Transfer</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            document.querySelectorAll('.add-to-receipt-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    sellItem(this.getAttribute('data-index'));
+                });
+            });
+        }
+
+        function addProduct() {
+            const name = document.getElementById('productName').value;
+            const type = document.getElementById('productType').value;
+            const price = parseFloat(document.getElementById('productPrice').value) || 0;
+            const stock = parseFloat(document.getElementById('productStock').value) || 0;
+
+            if (name && !isNaN(price) && !isNaN(stock)) {
+                const existingProductIndex = inventory.findIndex(item => item.productName === name);
+                if (existingProductIndex !== -1) {
+                    inventory[existingProductIndex].totalStock += stock;
+                } else {
+                    inventory.push({ productName: name, productType: type, productPrice: price, totalStock: stock });
+                }
+                
+                saveInventory();
+                renderInventory();
+                populateTopUpOptions();
+                clearForm();
+            } else {
+                alert('Please fill in all required fields correctly.');
+            }
+        }
+
+        function saveInventory() {
+            localStorage.setItem('store-stocks', JSON.stringify(inventory));
+        }
+
+        function populateTopUpOptions() {
+            const select = document.getElementById('topUpProduct');
+            select.innerHTML = '';
+            inventory.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.productName;
+                option.text = `${item.productName} - ${item.productType}`;
+                select.appendChild(option);
+            });
+        }
+
+        function clearForm() {
+            document.getElementById('productName').value = '';
+            document.getElementById('productType').value = 'scaled';
+            document.getElementById('productPrice').value = '';
+            document.getElementById('productStock').value = '';
+        }
+
+        function topUpStock() {
+            const productName = document.getElementById('topUpProduct').value;
+            const amount = parseFloat(document.getElementById('topUpAmount').value);
+
+            if (productName && !isNaN(amount) && amount > 0) {
+                const productIndex = inventory.findIndex(item => item.productName === productName);
+                if (productIndex !== -1) {
+                    inventory[productIndex].totalStock += amount;
+                    saveInventory();
+                    renderInventory();
+                    document.getElementById('topUpAmount').value = '';
+                } else {
+                    alert('Product not found in inventory.');
+                }
+            } else {
+                alert('Please fill in all required fields correctly.');
+            }
+        }
+
+        function sellItem(index) {
+            const item = inventory[index];
+            const purchaseAmountInput = document.getElementById(`purchaseAmount${index}`);
+            const purchaseAmount = parseFloat(purchaseAmountInput.value);
+
+            if (!isNaN(purchaseAmount) && purchaseAmount > 0) {
+                const quantity = purchaseAmount / item.productPrice;
+
+                if (quantity <= item.totalStock) {
+                    receiptItems.push({
+                        name: item.productName,
+                        quantity: quantity.toFixed(2),
+                        price: purchaseAmount.toFixed(2),
+                        type: item.productType
+                    });
+                    item.totalStock -= quantity;
+                    saveInventory();
+                    renderInventory();
+                    renderReceipt();
+                } else {
+                    alert('Insufficient stock.');
+                }
+            } else {
+                alert('Invalid purchase amount.');
+            }
+        }
+
+        function prepareTransfer(index) {
+            const item = inventory[index];
+            const transferAmount = prompt(`Enter the quantity to transfer for ${item.productName} (Available: ${item.totalStock}):`);
+            const amount = parseFloat(transferAmount);
+
+            if (!isNaN(amount) && amount > 0 && amount <= item.totalStock) {
+                item.totalStock -= amount;
+                saveInventory();
+
+                // Load warehouse-stocks from localStorage
+                let warehouseItems = JSON.parse(localStorage.getItem('warehouse-stocks')) || [];
+                const warehouseItemIndex = warehouseItems.findIndex(w => w.productName === item.productName);
+
+                if (warehouseItemIndex !== -1) {
+                    warehouseItems[warehouseItemIndex].totalStock += amount; // Add to existing warehouse stock
+                } else {
+                    // Create new warehouse item if not exists
+                    warehouseItems.push({
+                        productName: item.productName,
+                        productType: item.productType,
+                        totalStock: amount
+                    });
+                }
+
+                localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
+                alert(`Successfully transferred ${amount} of ${item.productName} to the warehouse.`);
+                renderInventory();
+            } else {
+                alert('Invalid transfer amount.');
+            }
+        }
+
+        function renderReceipt() {
+            const receiptList = document.getElementById('receiptItems');
+            receiptList.innerHTML = '';
+            let total = 0;
+
+            receiptItems.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${item.name} x${item.quantity} (${item.type}) - GHS ${item.price}`;
+                receiptList.appendChild(listItem);
+                total += parseFloat(item.price);
+            });
+
+            document.getElementById('receiptTotal').textContent = `Total: GHS ${total.toFixed(2)}`;
+        }
+
+        function checkout() {
+            const label = document.getElementById('receiptLabel').value;
+            if (label) {
+                receiptHistory.push({
+                    label: label,
+                    items: receiptItems.slice()
+                });
+                localStorage.setItem('receiptHistory', JSON.stringify(receiptHistory));
+                renderReceiptHistory();
+            }
+
+            receiptItems = [];
+            renderReceipt();
+            document.getElementById('receiptLabel').value = '';
+        }
+
+        function renderReceiptHistory() {
+            const receiptHistoryList = document.getElementById('allReceipts');
+            receiptHistoryList.innerHTML = '';
+
+            receiptHistory.forEach((receipt, index) => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    <h4>Receipt ${index + 1} - ${receipt.label}</h4>
+                    <ul>
+                        ${receipt.items.map(item => `<li>${item.name} x${item.quantity} (${item.type}) - GHS ${item.price}</li>`).join('')}
+                    </ul>
+                `;
+                receiptHistoryList.appendChild(listItem);
+            });
+        }
+
+        function toggleReceiptHistory() {
+            const receiptHistoryDiv = document.getElementById('receiptHistory');
+            receiptHistoryDiv.style.display = (receiptHistoryDiv.style.display === 'none') ? 'block' : 'none';
+        }
+
+        function populateProductNameOptions() {
+            const select = document.getElementById('productName');
+            select.innerHTML = '';
+            const options = ['Fish', 'Meat', 'Vegetables'];
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.text = option;
+                select.appendChild(opt);
+            });
+        }
+    </script>
+</body>
+
+</html>
