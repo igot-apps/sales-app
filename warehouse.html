@@ -51,6 +51,7 @@
         <select id="productName" required>
             <option value="">Select Product Name</option>
         </select>
+        <input type="text" id="newProductName" placeholder="New Product Name">
         <select id="productType" required>
             <option value="">Select Product Type</option>
             <option value="Scaled">Scaled</option>
@@ -58,6 +59,7 @@
         </select>
         <input type="number" id="totalStock" placeholder="Total Stock (kg or count)" required>
         <button type="submit">Add Item</button>
+        <button type="button" id="addNewProductBtn">Add New Product</button>
     </form>
 
     <div class="error" id="error-message"></div>
@@ -94,7 +96,25 @@
         const productNameSelect = document.getElementById('productName');
         const transferProductSelect = document.getElementById('transferProductName');
         
-        defaultProductNames.forEach((productName) => {
+        function updateProductDropdowns() {
+            productNameSelect.innerHTML = '<option value="">Select Product Name</option>';
+            transferProductSelect.innerHTML = '<option value="">Select Product</option>';
+            defaultProductNames.forEach((productName) => {
+                const option = document.createElement('option');
+                option.value = productName;
+                option.textContent = productName;
+                productNameSelect.appendChild(option);
+
+                const transferOption = document.createElement('option');
+                transferOption.value = productName;
+                transferOption.textContent = productName;
+                transferProductSelect.appendChild(transferOption);
+            });
+
+            warehouseItems.forEach(item => addProductToDropdown(item.productName));
+        }
+
+        function addProductToDropdown(productName) {
             const option = document.createElement('option');
             option.value = productName;
             option.textContent = productName;
@@ -104,7 +124,7 @@
             transferOption.value = productName;
             transferOption.textContent = productName;
             transferProductSelect.appendChild(transferOption);
-        });
+        }
 
         function loadWarehouseItems() {
             const itemsTableBody = document.getElementById('itemsTableBody');
@@ -117,6 +137,12 @@
                 newRow.insertCell(2).textContent = item.totalStock;
 
                 const actionCell = newRow.insertCell(3);
+                
+                const removeButton = document.createElement('button');
+                removeButton.textContent = 'Remove';
+                removeButton.onclick = () => removeItem(item);
+                actionCell.appendChild(removeButton);
+                
                 const moveButton = document.createElement('button');
                 moveButton.textContent = 'Transfer to Store';
                 moveButton.onclick = () => transferToStore(item);
@@ -124,134 +150,145 @@
             });
         }
 
+        function removeItem(item) {
+            warehouseItems = warehouseItems.filter(i => i !== item);
+            localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
+            loadWarehouseItems();
+        }
+
         function transferToStore(item) {
-    const amountToTransfer = prompt(`Transfer amount for ${item.productName} (Available: ${item.totalStock}):`);
-    const amount = parseInt(amountToTransfer, 10);
+            const amountToTransfer = prompt(`Transfer amount for ${item.productName} (Available: ${item.totalStock}):`);
+            const amount = parseInt(amountToTransfer, 10);
 
-    if (isNaN(amount) || amount <= 0 || amount > item.totalStock) {
-        alert('Invalid amount entered');
-        return;
-    }
-
-    // Deduct from warehouse
-    item.totalStock -= amount;
-
-    // Add to store
-    let storeItem = storeItems.find(storeItem => storeItem.productName === item.productName);
-    if (storeItem) {
-        if (storeItem.productPrice === null) {
-            const productPrice = prompt(`Please enter the product price for ${item.productName}:$`);
-            const price = parseFloat(productPrice);
-            if (isNaN(price)) {
-                alert('Invalid product price entered');
+            if (isNaN(amount) || amount <= 0 || amount > item.totalStock) {
+                alert('Invalid amount entered');
                 return;
             }
-            storeItem.productPrice = price;
-        }
-        storeItem.totalStock += amount; // Increase stock if exists
-    } else {
-        storeItem = {
-            productName: item.productName,
-            productType: item.productType,
-            productPrice: prompt(`Please enter the product price for ${item.productName}:$`), // Request price for new item
-            totalStock: amount // The newly transferred amount
-        };
-        const productPrice = storeItem.productPrice;
-        const price = parseFloat(productPrice);
-        if (isNaN(price)) {
-            alert('Invalid product price entered');
-            return;
-        }
-        storeItems.push(storeItem);
-    }
 
-    // Update local storage
-    localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
-    localStorage.setItem('store-stocks', JSON.stringify(storeItems));
-    loadWarehouseItems();
-    alert(`Successfully transferred ${amount} of ${item.productName} to store.`);
-}
+            // Deduct from warehouse
+            item.totalStock -= amount;
+
+            // Add to store
+            let storeItem = storeItems.find(storeItem => storeItem.productName === item.productName);
+            if (storeItem) {
+                if (storeItem.productPrice === null) {
+                    const productPrice = prompt(`Please enter the product price for ${item.productName}:$`);
+                    const price = parseFloat(productPrice);
+                    if (isNaN(price)) {
+                        alert('Invalid product price entered');
+                        return;
+                    }
+                    storeItem.productPrice = price;
+                }
+                storeItem.totalStock += amount; // Increase stock if exists
+            } else {
+                storeItem = {
+                    productName: item.productName,
+                    productType: item.productType,
+                    productPrice: prompt(`Please enter the product price for ${item.productName}:$`), // Request price for new item
+                    totalStock: amount // The newly transferred amount
+                };
+                const productPrice = storeItem.productPrice;
+                const price = parseFloat(productPrice);
+                if (isNaN(price)) {
+                    alert('Invalid product price entered');
+                    return;
+                }
+                storeItems.push(storeItem);
+            }
+
+            // Update local storage
+            localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
+            localStorage.setItem('store-stocks', JSON.stringify(storeItems));
+            loadWarehouseItems();
+            alert(`Successfully transferred ${amount} of ${item.productName} to store.`);
+        }
 
         document.getElementById('itemForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent form submission
+            event.preventDefault();
 
             const productName = document.getElementById('productName').value.trim();
             const productType = document.getElementById('productType').value.trim();
             const totalStock = document.getElementById('totalStock').value.trim();
             const errorMessage = document.getElementById('error-message');
 
-            // Clear previous error message
             errorMessage.textContent = '';
 
-            // Basic validation
             if (!productName || !productType || !totalStock) {
                 errorMessage.textContent = 'All fields are required!';
                 return;
             }
 
-            // Create the warehouse item
             const newItem = {
                 productName: productName,
                 productType: productType,
-                totalStock: parseInt(totalStock, 10) // Ensure it is a number
+                totalStock: parseInt(totalStock, 10)
             };
 
             warehouseItems.push(newItem);
             localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
             loadWarehouseItems();
 
-            // Reset form
             document.getElementById('itemForm').reset();
-            document.getElementById('productName').selectedIndex = 0; // Reset dropdown selection
+            document.getElementById('productName').selectedIndex = 0;
+        });
+
+        document.getElementById('addNewProductBtn').addEventListener('click', function() {
+            const newProduct = document.getElementById('newProductName').value.trim();
+            if (newProduct) {
+                // Add new product to dropdown
+                defaultProductNames.push(newProduct);
+                addProductToDropdown(newProduct);
+                
+                // Clear input
+                document.getElementById('newProductName').value = '';
+            } else {
+                alert('Please enter a product name to add.');
+            }
         });
 
         document.getElementById('transferForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent form submission
+            event.preventDefault();
 
             const productName = document.getElementById('transferProductName').value.trim();
             const transferAmount = document.getElementById('transferAmount').value.trim();
 
             const storeItem = storeItems.find(item => item.productName === productName);
 
-            // Check for existing store item
             if (!storeItem) {
                 alert('Item does not exist in store.');
                 return;
             }
 
-            // Verify amount to transfer
             const amount = parseInt(transferAmount, 10);
             if (isNaN(amount) || amount <= 0 || amount > storeItem.totalStock) {
                 alert(`Invalid amount entered. Available stock in store: ${storeItem.totalStock}`);
                 return;
             }
 
-            // Deduct from store
             storeItem.totalStock -= amount;
 
-            // Add to warehouse
             const warehouseItem = warehouseItems.find(item => item.productName === productName);
             if (warehouseItem) {
-                warehouseItem.totalStock += amount; // Increase stock if exists
+                warehouseItem.totalStock += amount;
             } else {
-                // Create new warehouse item if doesn't exist
                 warehouseItems.push({
                     productName: productName,
-                    productType: storeItem.productType, // Ensure type gets set correctly
-                    totalStock: amount // The amount being transferred
+                    productType: storeItem.productType,
+                    totalStock: amount
                 });
             }
 
-            // Update local storage
             localStorage.setItem('store-stocks', JSON.stringify(storeItems));
             localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
 
             alert(`Successfully transferred ${amount} of ${productName} to warehouse.`);
-            loadWarehouseItems(); // Refresh the table after transferring
-            document.getElementById('transferForm').reset(); // Reset the transfer form
+            loadWarehouseItems();
+            document.getElementById('transferForm').reset();
         });
 
         // Load initial data
+        updateProductDropdowns();
         loadWarehouseItems();
     </script>
 
