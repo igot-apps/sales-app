@@ -159,9 +159,11 @@
         }
 
         function removeItem(item) {
-            warehouseItems = warehouseItems.filter(i => i !== item);
-            localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
-            loadWarehouseItems();
+            if (confirm(`Are you sure you want to remove ${item.name} from the warehouse?`)) {
+                warehouseItems = warehouseItems.filter(i => i !== item);
+                localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
+                loadWarehouseItems();
+            }
         }
 
         function transferToStore(item) {
