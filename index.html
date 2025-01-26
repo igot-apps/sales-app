@@ -26,10 +26,14 @@
             margin: 0 auto;
         }
 
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
         }
 
         table th,
@@ -131,19 +135,21 @@
         <button onclick="topUpStock()">Top Up</button>
 
         <h2>Store Stocks</h2>
-        <table id="inventoryTable">
-            <thead>
-                <tr>
-                    <th>Product Name</th>
-                    <th>Product Type</th>
-                    <th>Price (GHS)</th>
-                    <th>Total Stock</th>
-                    <th>Purchase Amount (GHS)</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div class="table-container">
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Product Type</th>
+                        <th>Price (GHS)</th>
+                        <th>Total Stock</th>
+                        <th>Purchase Amount (GHS)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
 
         <div>
             <a href="localstorage.html">localStorage</a>
