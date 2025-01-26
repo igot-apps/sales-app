@@ -171,6 +171,7 @@
             <h3>All Receipts</h3>
             <ul id="allReceipts"></ul>
         </div>
+
     </div>
 
     <script>
@@ -210,54 +211,55 @@
         }
 
         function renderInventory() {
-            const tableBody = document.querySelector('#inventoryTable tbody');
-            tableBody.innerHTML = '';
+    const tableBody = document.querySelector('#inventoryTable tbody');
+    tableBody.innerHTML = '';
 
-            inventory.forEach((item, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.productName}</td>
-                    <td>${item.productType === 'scaled' ? 'Scaled (Kg)' : 'Unscaled (Units)'}</td>
-                    <td>${item.productPrice !== undefined ? parseFloat(item.productPrice).toFixed(2) : "0.00"}</td>
-                    <td>${item.totalStock.toFixed(2)}</td>
-                    <td><input type="number" min="0" placeholder="GHS" id="purchaseAmount${index}"></td>
-                    <td>
-                        <button data-index="${index}" class="add-to-receipt-btn">Add to Receipt</button>
-                        <button class="transfer-btn" onclick="prepareTransfer(${index})">Transfer</button>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
+    inventory.forEach((item, index) => {
+        const row = document.createElement('tr');
+        // Ensure the product type is checked correctly (case-sensitive match)
+        row.innerHTML = `
+            <td>${item.productName}</td>
+            <td>${item.productType === 'Scaled' ? 'Scaled (Kg)' : 'Unscaled (Units)'}</td>
+            <td>${item.productPrice !== undefined ? parseFloat(item.productPrice).toFixed(2) : "0.00"}</td>
+            <td>${item.totalStock.toFixed(2)}</td>
+            <td><input type="number" min="0" placeholder="GHS" id="purchaseAmount${index}"></td>
+            <td>
+                <button data-index="${index}" class="add-to-receipt-btn">Add to Receipt</button>
+                <button class="transfer-btn" onclick="prepareTransfer(${index})">Transfer</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
 
-            document.querySelectorAll('.add-to-receipt-btn').forEach(btn => {
-                btn.addEventListener('click', function () {
-                    sellItem(this.getAttribute('data-index'));
-                });
-            });
+    document.querySelectorAll('.add-to-receipt-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            sellItem(this.getAttribute('data-index'));
+        });
+    });
+}
+
+function addProduct() {
+    const name = document.getElementById('productName').value;
+    const type = document.getElementById('productType').value === "scaled" ? "Scaled" : "Unscaled"; // Ensure consistency in naming
+    const price = parseFloat(document.getElementById('productPrice').value) || 0;
+    const stock = parseFloat(document.getElementById('productStock').value) || 0;
+
+    if (name && !isNaN(price) && !isNaN(stock)) {
+        const existingProductIndex = inventory.findIndex(item => item.productName === name);
+        if (existingProductIndex !== -1) {
+            inventory[existingProductIndex].totalStock += stock;
+        } else {
+            inventory.push({ productName: name, productType: type, productPrice: price, totalStock: stock });
         }
 
-        function addProduct() {
-            const name = document.getElementById('productName').value;
-            const type = document.getElementById('productType').value;
-            const price = parseFloat(document.getElementById('productPrice').value) || 0;
-            const stock = parseFloat(document.getElementById('productStock').value) || 0;
-
-            if (name && !isNaN(price) && !isNaN(stock)) {
-                const existingProductIndex = inventory.findIndex(item => item.productName === name);
-                if (existingProductIndex !== -1) {
-                    inventory[existingProductIndex].totalStock += stock;
-                } else {
-                    inventory.push({ productName: name, productType: type, productPrice: price, totalStock: stock });
-                }
-                
-                saveInventory();
-                renderInventory();
-                populateTopUpOptions();
-                clearForm();
-            } else {
-                alert('Please fill in all required fields correctly.');
-            }
-        }
+        saveInventory();
+        renderInventory();
+        populateTopUpOptions();
+        clearForm();
+    } else {
+        alert('Please fill in all required fields correctly.');
+    }
+}
 
         function saveInventory() {
             localStorage.setItem('store-stocks', JSON.stringify(inventory));
@@ -364,9 +366,15 @@
             receiptList.innerHTML = '';
             let total = 0;
 
-            receiptItems.forEach(item => {
+            receiptItems.forEach((item, index) => {
+                const formattedItem = `${item.name} ${item.quantity} (${item.type === 'scaled' ? 'kg' : 'pcs'}) @ GHS ${item.price}`;
                 const listItem = document.createElement('li');
-                listItem.textContent = `${item.name} x${item.quantity} (${item.type}) - GHS ${item.price}`;
+                listItem.textContent = formattedItem;
+
+                const returnBtn = document.createElement('button');
+                returnBtn.textContent = "Return";
+                returnBtn.onclick = () => returnToStore(item, index);
+                listItem.appendChild(returnBtn);
                 receiptList.appendChild(listItem);
                 total += parseFloat(item.price);
             });
@@ -374,12 +382,39 @@
             document.getElementById('receiptTotal').textContent = `Total: GHS ${total.toFixed(2)}`;
         }
 
+        function returnToStore(item, index) {
+            const quantityToReturn = parseFloat(item.quantity);
+            const itemInStore = inventory.find(i => i.productName === item.name);
+
+            if (itemInStore) {
+                itemInStore.totalStock += quantityToReturn;  // Add back to the inventory
+            } else {
+                inventory.push({
+                    productName: item.name,
+                    productType: item.type,
+                    totalStock: quantityToReturn,
+                    productPrice: item.price / quantityToReturn // Calculate the price per unit
+                });
+            }
+
+            // Remove item from receipt items
+            receiptItems.splice(index, 1);
+            saveInventory();
+            renderInventory();
+            renderReceipt();
+        }
+
         function checkout() {
             const label = document.getElementById('receiptLabel').value;
+            const currentDate = new Date().toLocaleString();
+            let sum = 0;
+
             if (label) {
                 receiptHistory.push({
                     label: label,
-                    items: receiptItems.slice()
+                    items: receiptItems.slice(),
+                    date: currentDate,
+                    total: parseFloat(document.getElementById('receiptTotal').textContent.split(' ')[2]) // Get sum from total
                 });
                 localStorage.setItem('receiptHistory', JSON.stringify(receiptHistory));
                 renderReceiptHistory();
@@ -397,10 +432,11 @@
             receiptHistory.forEach((receipt, index) => {
                 const listItem = document.createElement('li');
                 listItem.innerHTML = `
-                    <h4>Receipt ${index + 1} - ${receipt.label}</h4>
+                    <h4>Receipt ${index + 1} - ${receipt.label} - ${receipt.date}</h4>
                     <ul>
-                        ${receipt.items.map(item => `<li>${item.name} x${item.quantity} (${item.type}) - GHS ${item.price}</li>`).join('')}
+                        ${receipt.items.map(item => `<li>${item.name} ${item.quantity} (${item.type === 'scaled' ? 'kg' : 'pcs'}) @ GHS ${item.price}</li>`).join('')}
                     </ul>
+                    <p>Total: GHS ${receipt.total.toFixed(2)}</p>
                 `;
                 receiptHistoryList.appendChild(listItem);
             });

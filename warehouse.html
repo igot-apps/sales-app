@@ -87,6 +87,14 @@
         <button type="submit">Transfer</button>
     </form>
 
+    <div>
+        <a href="localstorage.html">localStorage</a>
+        <a href="./inventory.html">inventory</a>
+        <a href="./warehouse.html">warehouse</a>
+        <a href="./report.html">report</a>
+        <a href="./index.html">index</a>
+    </div>
+
     <script>
         let defaultProductNames = ["Chicken Back", "Yemuade", "Nat Sausage"];
         let warehouseItems = JSON.parse(localStorage.getItem('warehouse-stocks')) || [];
@@ -179,6 +187,9 @@
                         return;
                     }
                     storeItem.productPrice = price;
+                }
+                if(storeItem.productType == null) {
+                storeItem.productType = item.productType;
                 }
                 storeItem.totalStock += amount; // Increase stock if exists
             } else {
