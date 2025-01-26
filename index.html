@@ -178,16 +178,16 @@
         let inventory = [];
         let receiptItems = [];
         let receiptHistory = [];
-
+    
         window.onload = function () {
             loadPersistedData();
             populateProductNameOptions();
         };
-
+    
         function loadPersistedData() {
             const savedInventory = localStorage.getItem('store-stocks');
             const savedHistory = localStorage.getItem('receiptHistory');
-
+    
             if (savedInventory) {
                 try {
                     inventory = JSON.parse(savedInventory);
@@ -198,7 +198,7 @@
                 renderInventory();
                 populateTopUpOptions();
             }
-
+    
             if (savedHistory) {
                 try {
                     receiptHistory = JSON.parse(savedHistory);
@@ -209,62 +209,61 @@
                 renderReceiptHistory();
             }
         }
-
+    
         function renderInventory() {
-    const tableBody = document.querySelector('#inventoryTable tbody');
-    tableBody.innerHTML = '';
-
-    inventory.forEach((item, index) => {
-        const row = document.createElement('tr');
-        // Ensure the product type is checked correctly (case-sensitive match)
-        row.innerHTML = `
-            <td>${item.productName}</td>
-            <td>${item.productType === 'Scaled' ? 'Scaled (Kg)' : 'Unscaled (Units)'}</td>
-            <td>${item.productPrice !== undefined ? parseFloat(item.productPrice).toFixed(2) : "0.00"}</td>
-            <td>${item.totalStock.toFixed(2)}</td>
-            <td><input type="number" min="0" placeholder="GHS" id="purchaseAmount${index}"></td>
-            <td>
-                <button data-index="${index}" class="add-to-receipt-btn">Add to Receipt</button>
-                <button class="transfer-btn" onclick="prepareTransfer(${index})">Transfer</button>
-            </td>
-        `;
-        tableBody.appendChild(row);
-    });
-
-    document.querySelectorAll('.add-to-receipt-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            sellItem(this.getAttribute('data-index'));
-        });
-    });
-}
-
-function addProduct() {
-    const name = document.getElementById('productName').value;
-    const type = document.getElementById('productType').value === "scaled" ? "Scaled" : "Unscaled"; // Ensure consistency in naming
-    const price = parseFloat(document.getElementById('productPrice').value) || 0;
-    const stock = parseFloat(document.getElementById('productStock').value) || 0;
-
-    if (name && !isNaN(price) && !isNaN(stock)) {
-        const existingProductIndex = inventory.findIndex(item => item.productName === name);
-        if (existingProductIndex !== -1) {
-            inventory[existingProductIndex].totalStock += stock;
-        } else {
-            inventory.push({ productName: name, productType: type, productPrice: price, totalStock: stock });
+            const tableBody = document.querySelector('#inventoryTable tbody');
+            tableBody.innerHTML = '';
+    
+            inventory.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.productName}</td>
+                    <td>${item.productType === 'Scaled' ? 'Scaled (Kg)' : 'Unscaled (Units)'}</td>
+                    <td>${item.productPrice !== undefined ? parseFloat(item.productPrice).toFixed(2) : "0.00"}</td>
+                    <td>${item.totalStock.toFixed(2)}</td>
+                    <td><input type="number" min="0" placeholder="GHS" id="purchaseAmount${index}"></td>
+                    <td>
+                        <button data-index="${index}" class="add-to-receipt-btn">Add to Receipt</button>
+                        <button class="transfer-btn" onclick="prepareTransfer(${index})">Transfer</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+    
+            document.querySelectorAll('.add-to-receipt-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    sellItem(this.getAttribute('data-index'));
+                });
+            });
         }
-
-        saveInventory();
-        renderInventory();
-        populateTopUpOptions();
-        clearForm();
-    } else {
-        alert('Please fill in all required fields correctly.');
-    }
-}
-
+    
+        function addProduct() {
+            const name = document.getElementById('productName').value;
+            const type = document.getElementById('productType').value === "scaled" ? "Scaled" : "Unscaled";
+            const price = parseFloat(document.getElementById('productPrice').value) || 0;
+            const stock = parseFloat(document.getElementById('productStock').value) || 0;
+    
+            if (name && !isNaN(price) && !isNaN(stock)) {
+                const existingProductIndex = inventory.findIndex(item => item.productName === name);
+                if (existingProductIndex !== -1) {
+                    inventory[existingProductIndex].totalStock += stock;
+                } else {
+                    inventory.push({ productName: name, productType: type, productPrice: price, totalStock: stock });
+                }
+    
+                saveInventory();
+                renderInventory();
+                populateTopUpOptions();
+                clearForm();
+            } else {
+                alert('Please fill in all required fields correctly.');
+            }
+        }
+    
         function saveInventory() {
             localStorage.setItem('store-stocks', JSON.stringify(inventory));
         }
-
+    
         function populateTopUpOptions() {
             const select = document.getElementById('topUpProduct');
             select.innerHTML = '';
@@ -275,18 +274,18 @@ function addProduct() {
                 select.appendChild(option);
             });
         }
-
+    
         function clearForm() {
             document.getElementById('productName').value = '';
             document.getElementById('productType').value = 'scaled';
             document.getElementById('productPrice').value = '';
             document.getElementById('productStock').value = '';
         }
-
+    
         function topUpStock() {
             const productName = document.getElementById('topUpProduct').value;
             const amount = parseFloat(document.getElementById('topUpAmount').value);
-
+    
             if (productName && !isNaN(amount) && amount > 0) {
                 const productIndex = inventory.findIndex(item => item.productName === productName);
                 if (productIndex !== -1) {
@@ -301,20 +300,20 @@ function addProduct() {
                 alert('Please fill in all required fields correctly.');
             }
         }
-
+    
         function sellItem(index) {
             const item = inventory[index];
             const purchaseAmountInput = document.getElementById(`purchaseAmount${index}`);
             const purchaseAmount = parseFloat(purchaseAmountInput.value);
-
+    
             if (!isNaN(purchaseAmount) && purchaseAmount > 0) {
                 const quantity = purchaseAmount / item.productPrice;
-
+    
                 if (quantity <= item.totalStock) {
                     receiptItems.push({
                         name: item.productName,
-                        quantity: quantity.toFixed(2),
-                        price: purchaseAmount.toFixed(2),
+                        quantity: parseFloat(quantity.toFixed(2)),
+                        price: parseFloat(purchaseAmount.toFixed(2)),
                         type: item.productType
                     });
                     item.totalStock -= quantity;
@@ -328,31 +327,29 @@ function addProduct() {
                 alert('Invalid purchase amount.');
             }
         }
-
+    
         function prepareTransfer(index) {
             const item = inventory[index];
             const transferAmount = prompt(`Enter the quantity to transfer for ${item.productName} (Available: ${item.totalStock}):`);
             const amount = parseFloat(transferAmount);
-
+    
             if (!isNaN(amount) && amount > 0 && amount <= item.totalStock) {
                 item.totalStock -= amount;
                 saveInventory();
-
-                // Load warehouse-stocks from localStorage
+    
                 let warehouseItems = JSON.parse(localStorage.getItem('warehouse-stocks')) || [];
                 const warehouseItemIndex = warehouseItems.findIndex(w => w.productName === item.productName);
-
+    
                 if (warehouseItemIndex !== -1) {
-                    warehouseItems[warehouseItemIndex].totalStock += amount; // Add to existing warehouse stock
+                    warehouseItems[warehouseItemIndex].totalStock += amount;
                 } else {
-                    // Create new warehouse item if not exists
                     warehouseItems.push({
                         productName: item.productName,
                         productType: item.productType,
                         totalStock: amount
                     });
                 }
-
+    
                 localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
                 alert(`Successfully transferred ${amount} of ${item.productName} to the warehouse.`);
                 renderInventory();
@@ -360,93 +357,119 @@ function addProduct() {
                 alert('Invalid transfer amount.');
             }
         }
-
+    
         function renderReceipt() {
             const receiptList = document.getElementById('receiptItems');
             receiptList.innerHTML = '';
             let total = 0;
-
+    
             receiptItems.forEach((item, index) => {
-                const formattedItem = `${item.name} ${item.quantity} (${item.type === 'scaled' ? 'kg' : 'pcs'}) @ GHS ${item.price}`;
+                const formattedItem = `${item.name} ${item.quantity} (${item.type === 'Scaled' ? 'kg' : 'pcs'}) @ GHS ${item.price}`;
                 const listItem = document.createElement('li');
                 listItem.textContent = formattedItem;
-
+    
                 const returnBtn = document.createElement('button');
                 returnBtn.textContent = "Return";
                 returnBtn.onclick = () => returnToStore(item, index);
                 listItem.appendChild(returnBtn);
                 receiptList.appendChild(listItem);
-                total += parseFloat(item.price);
+                total += item.price;
             });
-
+    
             document.getElementById('receiptTotal').textContent = `Total: GHS ${total.toFixed(2)}`;
         }
-
+    
         function returnToStore(item, index) {
-            const quantityToReturn = parseFloat(item.quantity);
+            const quantityToReturn = item.quantity;
             const itemInStore = inventory.find(i => i.productName === item.name);
-
+    
             if (itemInStore) {
-                itemInStore.totalStock += quantityToReturn;  // Add back to the inventory
+                itemInStore.totalStock += quantityToReturn; // Add back to inventory
             } else {
                 inventory.push({
                     productName: item.name,
                     productType: item.type,
                     totalStock: quantityToReturn,
-                    productPrice: item.price / quantityToReturn // Calculate the price per unit
+                    productPrice: item.price / quantityToReturn // Calculate price per unit
                 });
             }
-
+    
             // Remove item from receipt items
             receiptItems.splice(index, 1);
             saveInventory();
             renderInventory();
             renderReceipt();
         }
-
+    
         function checkout() {
             const label = document.getElementById('receiptLabel').value;
             const currentDate = new Date().toLocaleString();
-            let sum = 0;
-
+            
+            if (receiptItems.length === 0) {
+                alert('No items in the receipt to checkout');
+                return;
+            }
+    
             if (label) {
+                let sum = 0;
+                receiptItems.forEach(item => sum += item.price);
+    
                 receiptHistory.push({
                     label: label,
                     items: receiptItems.slice(),
                     date: currentDate,
-                    total: parseFloat(document.getElementById('receiptTotal').textContent.split(' ')[2]) // Get sum from total
+                    total: sum
                 });
                 localStorage.setItem('receiptHistory', JSON.stringify(receiptHistory));
                 renderReceiptHistory();
+    
+                // Clear receipt items
+                receiptItems = [];
+                renderReceipt();
+                document.getElementById('receiptLabel').value = '';
+            } else {
+                alert('Please provide a label for the receipt.');
             }
-
-            receiptItems = [];
-            renderReceipt();
-            document.getElementById('receiptLabel').value = '';
         }
-
+    
         function renderReceiptHistory() {
             const receiptHistoryList = document.getElementById('allReceipts');
             receiptHistoryList.innerHTML = '';
-
+    
             receiptHistory.forEach((receipt, index) => {
                 const listItem = document.createElement('li');
                 listItem.innerHTML = `
                     <h4>Receipt ${index + 1} - ${receipt.label} - ${receipt.date}</h4>
                     <ul>
-                        ${receipt.items.map(item => `<li>${item.name} ${item.quantity} (${item.type === 'scaled' ? 'kg' : 'pcs'}) @ GHS ${item.price}</li>`).join('')}
+                        ${receipt.items.map(item => `<li>${item.name} ${item.quantity} (${item.type === 'Scaled' ? 'kg' : 'pcs'}) @ GHS ${item.price}</li>`).join('')}
                     </ul>
                     <p>Total: GHS ${receipt.total.toFixed(2)}</p>
+                    <button onclick="returnReceiptItems(${index})">Return Items</button>
                 `;
                 receiptHistoryList.appendChild(listItem);
             });
         }
-
+    
+        function returnReceiptItems(receiptIndex) {
+            const receipt = receiptHistory[receiptIndex];
+            
+            // Return each item in the receipt
+            receipt.items.forEach(item => {
+                returnToStore(item, -1); // -1 because we want to return items to the inventory without removing from receipt
+            });
+    
+            // Remove receipt from history
+            receiptHistory.splice(receiptIndex, 1);
+            localStorage.setItem('receiptHistory', JSON.stringify(receiptHistory));
+            renderReceiptHistory();
+            alert('Items returned to store and receipt removed.');
+        }
+    
         function toggleReceiptHistory() {
             const receiptHistoryDiv = document.getElementById('receiptHistory');
             receiptHistoryDiv.style.display = (receiptHistoryDiv.style.display === 'none') ? 'block' : 'none';
         }
-
+    
         function populateProductNameOptions() {
             const select = document.getElementById('productName');
             select.innerHTML = '';
