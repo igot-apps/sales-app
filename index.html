@@ -196,6 +196,12 @@
 
     filteredInventory.forEach((item) => {
         const row = document.createElement('tr');
+
+        // Apply pink background if total stock is 5 or less
+        if (item.totalStock <= 5) {
+            row.style.backgroundColor = 'pink';
+        }
+
         row.innerHTML = `
             <td>${item.productName}</td>
             <td>${item.productType === 'Scaled' ? 'Scaled (Kg)' : 'Unscaled (Units)'}</td>
@@ -216,7 +222,6 @@
         });
     });
 }
-
 
         
 
