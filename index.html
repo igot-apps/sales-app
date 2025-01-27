@@ -185,7 +185,7 @@
                     <td>${item.productType === 'Scaled' ? 'Scaled (Kg)' : 'Unscaled (Units)'}</td>
                     <td>${item.productPrice.toFixed(2)}</td>
                     <td>${item.totalStock.toFixed(2)}</td>
-                    <td><input type="number" min="0" placeholder="GHS" id="purchaseAmount${index}"></td>
+                    <td>${item.productName}<br/><input type="number" min="0" placeholder="GHS" id="purchaseAmount${index}"></td>
                     <td>
                         <button data-index="${index}" class="add-to-receipt-btn">Add to Receipt</button>
                         <button class="transfer-btn" onclick="prepareTransfer(${index})">Transfer</button>
