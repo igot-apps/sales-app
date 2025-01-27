@@ -175,49 +175,49 @@
         }
 
         function transferToStore(item) {
-            const amountToTransfer = prompt(`Enter amount for ${item.productName} (Available: ${item.totalStock}):`);
-            const amount = parseInt(amountToTransfer, 10);
+    const amountToTransfer = prompt(`Enter amount for ${item.productName} (Available: ${item.totalStock}):`);
+    const amount = parseInt(amountToTransfer, 10);
 
-            if (isNaN(amount) || amount <= 0 || amount > item.totalStock) {
-                alert('Invalid amount entered');
-                return;
-            }
+    if (isNaN(amount) || amount <= 0 || amount > item.totalStock) {
+        alert('Invalid amount entered. Please enter a number greater than 0 and within the available stock.');
+        return; // Stop transfer if amount is invalid
+    }
 
-            const productPrice = prompt(`Enter price for ${item.productName} for each unit:`);
+    const productPrice = prompt(`Enter price for ${item.productName} for each unit:`);
+    const price = parseFloat(productPrice);
 
-            if (isNaN(productPrice) || parseFloat(productPrice) <= 0) {
-                alert("Invalid price entered. Please enter a valid number for the product price.");
-                return;
-            }
+    if (isNaN(price) || price <= 0) {
+        alert('Invalid price entered. Please enter a valid number greater than 0 for the product price.');
+        return; // Stop transfer if price is invalid
+    }
 
-            const price = parseFloat(productPrice);
+    // Deduct from warehouse stock
+    item.totalStock -= amount;
 
-            // Deduct from warehouse
-            item.totalStock -= amount;
+    // Add to store
+    let storeItem = storeItems.find(storeItem => storeItem.productName === item.productName);
+    if (storeItem) {
+        storeItem.totalStock += amount;
+        storeItem.productPrice = price;
+        storeItem.totalPrice += price * amount; // Update total price in store
+    } else {
+        storeItem = {
+            productName: item.productName,
+            productType: item.productType,
+            totalStock: amount,
+            productPrice: price,
+            totalPrice: price * amount
+        };
+        storeItems.push(storeItem);
+    }
 
-            // Add to store
-            let storeItem = storeItems.find(storeItem => storeItem.productName === item.productName);
-            if (storeItem) {
-                storeItem.totalStock += amount;
-                storeItem.productPrice = price;
-                storeItem.totalPrice += price * amount; // Update total price in store
-            } else {
-                storeItem = {
-                    productName: item.productName,
-                    productType: item.productType,
-                    totalStock: amount,
-                    productPrice: price,
-                    totalPrice: price * amount
-                };
-                storeItems.push(storeItem);
-            }
+    // Update local storage
+    localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
+    localStorage.setItem('store-stocks', JSON.stringify(storeItems));
+    loadWarehouseItems();
+    alert(`Successfully transferred ${amount} of ${item.productName} to store.`);
+}
 
-            // Update local storage
-            localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
-            localStorage.setItem('store-stocks', JSON.stringify(storeItems));
-            loadWarehouseItems();
-            alert(`Successfully transferred ${amount} of ${item.productName} to store.`);
-        }
 
         document.getElementById('itemForm').addEventListener('submit', function(event) {
             event.preventDefault();
