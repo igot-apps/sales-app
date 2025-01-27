@@ -151,43 +151,28 @@
             populateProductNameOptions();
         };
 
+        
         function loadPersistedData() {
             const savedInventory = localStorage.getItem('store-stocks');
             const savedHistory = localStorage.getItem('receiptHistory');
             const savedCurrentReceipt = localStorage.getItem('currentReceipt');
 
             if (savedInventory) {
-                try {
-                    inventory = JSON.parse(savedInventory);
-                } catch (error) {
-                    console.error("Failed to parse inventory data from localStorage", error);
-                    inventory = [];
-                }
+                inventory = JSON.parse(savedInventory) || [];
                 renderInventory();
-                populateTopUpOptions();
             }
 
             if (savedHistory) {
-                try {
-                    receiptHistory = JSON.parse(savedHistory);
-                } catch (error) {
-                    console.error("Failed to parse receipt history from localStorage", error);
-                    receiptHistory = [];
-                }
+                receiptHistory = JSON.parse(savedHistory) || [];
                 renderReceiptHistory();
             }
 
-            // Load the current receipt if it exists
             if (savedCurrentReceipt) {
-                try {
-                    receiptItems = JSON.parse(savedCurrentReceipt);
-                } catch (error) {
-                    console.error("Failed to parse current receipt data from localStorage", error);
-                    receiptItems = [];
-                }
-                renderReceipt();
+                receiptItems = JSON.parse(savedCurrentReceipt) || [];
+                renderReceipt(); // Render the saved receipt
             }
         }
+
 
         function renderInventory() {
             const tableBody = document.querySelector('#inventoryTable tbody');
@@ -312,14 +297,14 @@
                 returnBtn.onclick = () => returnToStore(item, index);
                 listItem.appendChild(returnBtn);
                 receiptList.appendChild(listItem);
+
                 total += item.price;
             });
 
             document.getElementById('receiptTotal').textContent = `Total: GHS ${total.toFixed(2)}`;
-            
-            // Save current receipt to localStorage
-            localStorage.setItem('currentReceipt', JSON.stringify(receiptItems));
+            localStorage.setItem('currentReceipt', JSON.stringify(receiptItems)); // Persist the receipt
         }
+
 
         function returnToStore(item, index) {
             const quantityToReturn = item.quantity;
@@ -352,23 +337,27 @@
                 return;
             }
 
-            let sum = 0;
-            receiptItems.forEach(item => sum += item.price);
+            const total = receiptItems.reduce((sum, item) => sum + item.price, 0);
 
             receiptHistory.push({
                 label: label,
                 items: receiptItems.slice(),
                 date: currentDate,
-                total: sum
+                total: total
             });
+
             localStorage.setItem('receiptHistory', JSON.stringify(receiptHistory));
             renderReceiptHistory();
 
-            // Clear receipt items
+            // Clear receipt items and save to localStorage
             receiptItems = [];
+            localStorage.removeItem('currentReceipt'); // Remove the saved receipt
             renderReceipt();
+
             document.getElementById('receiptLabel').value = '';
+            alert('Checkout successful!');
         }
+
 
         function renderReceiptHistory() {
             const receiptHistoryList = document.getElementById('allReceipts');
