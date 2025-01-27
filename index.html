@@ -96,44 +96,6 @@
         <h1>Frozen Food Retail Management</h1>
     </header>
     <div class="container">
-        <h2>Add Product</h2>
-        <div class="form-group">
-            <label for="productName">Product Name:</label>
-            <select id="productName" required>
-                <option value="">Select Product Name</option>
-                <option value="Fish">Fish</option>
-                <option value="Meat">Meat</option>
-                <option value="Vegetables">Vegetables</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="productType">Product Type:</label>
-            <select id="productType">
-                <option value="scaled">Scaled (Kg)</option>
-                <option value="unscaled">Unscaled (Units)</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="productPrice">Price (GHS):</label>
-            <input type="number" id="productPrice" placeholder="Enter price">
-        </div>
-        <div class="form-group">
-            <label for="productStock">Initial Stock:</label>
-            <input type="number" id="productStock" placeholder="Enter initial stock">
-        </div>
-        <button onclick="addProduct()">Add Product</button>
-
-        <h2>Top Up Stock</h2>
-        <div class="form-group">
-            <label for="topUpProduct">Select Product:</label>
-            <select id="topUpProduct"></select>
-        </div>
-        <div class="form-group">
-            <label for="topUpAmount">Top Up Amount:</label>
-            <input type="number" id="topUpAmount" placeholder="Enter top-up amount">
-        </div>
-        <button onclick="topUpStock()">Top Up</button>
-
         <h2>Store Stocks</h2>
         <div class="table-container">
             <table id="inventoryTable">
@@ -254,28 +216,7 @@
             });
         }
 
-        function addProduct() {
-            const name = document.getElementById('productName').value;
-            const type = document.getElementById('productType').value === "scaled" ? "Scaled" : "Unscaled";
-            const price = parseFloat(document.getElementById('productPrice').value) || 0;
-            const stock = parseFloat(document.getElementById('productStock').value) || 0;
-
-            if (name && !isNaN(price) && !isNaN(stock)) {
-                const existingProductIndex = inventory.findIndex(item => item.productName === name);
-                if (existingProductIndex !== -1) {
-                    inventory[existingProductIndex].totalStock += stock;
-                } else {
-                    inventory.push({ productName: name, productType: type, productPrice: price, totalStock: stock });
-                }
-
-                saveInventory();
-                renderInventory();
-                populateTopUpOptions();
-                clearForm();
-            } else {
-                alert('Please fill in all required fields correctly.');
-            }
-        }
+        
 
         function saveInventory() {
             localStorage.setItem('store-stocks', JSON.stringify(inventory));
@@ -297,25 +238,6 @@
             document.getElementById('productType').value = 'scaled';
             document.getElementById('productPrice').value = '';
             document.getElementById('productStock').value = '';
-        }
-
-        function topUpStock() {
-            const productName = document.getElementById('topUpProduct').value;
-            const amount = parseFloat(document.getElementById('topUpAmount').value);
-
-            if (productName && !isNaN(amount) && amount > 0) {
-                const productIndex = inventory.findIndex(item => item.productName === productName);
-                if (productIndex !== -1) {
-                    inventory[productIndex].totalStock += amount;
-                    saveInventory();
-                    renderInventory();
-                    document.getElementById('topUpAmount').value = '';
-                } else {
-                    alert('Product not found in inventory.');
-                }
-            } else {
-                alert('Please fill in all required fields correctly.');
-            }
         }
 
         function sellItem(index) {

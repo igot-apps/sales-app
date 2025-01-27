@@ -60,6 +60,7 @@
         <input type="number" id="totalStock" placeholder="Total Stock (kg or count)" required>
         <button type="submit">Add Item</button>
         <button type="button" id="addNewProductBtn">Add New Product</button>
+        <button type="button" id="deleteProductBtn">Delete Selected Product</button>
     </form>
 
     <div class="error" id="error-message"></div>
@@ -175,49 +176,45 @@
         }
 
         function transferToStore(item) {
-    const amountToTransfer = prompt(`Enter amount for ${item.productName} (Available: ${item.totalStock}):`);
-    const amount = parseInt(amountToTransfer, 10);
+            const amountToTransfer = prompt(`Enter amount for ${item.productName} (Available: ${item.totalStock}):`);
+            const amount = parseInt(amountToTransfer, 10);
 
-    if (isNaN(amount) || amount <= 0 || amount > item.totalStock) {
-        alert('Invalid amount entered. Please enter a number greater than 0 and within the available stock.');
-        return; // Stop transfer if amount is invalid
-    }
+            if (isNaN(amount) || amount <= 0 || amount > item.totalStock) {
+                alert('Invalid amount entered. Please enter a number greater than 0 and within the available stock.');
+                return; 
+            }
 
-    const productPrice = prompt(`Enter price for ${item.productName} for each unit:`);
-    const price = parseFloat(productPrice);
+            const productPrice = prompt(`Enter price for ${item.productName} for each unit:`);
+            const price = parseFloat(productPrice);
 
-    if (isNaN(price) || price <= 0) {
-        alert('Invalid price entered. Please enter a valid number greater than 0 for the product price.');
-        return; // Stop transfer if price is invalid
-    }
+            if (isNaN(price) || price <= 0) {
+                alert('Invalid price entered. Please enter a valid number greater than 0 for the product price.');
+                return; 
+            }
 
-    // Deduct from warehouse stock
-    item.totalStock -= amount;
+            item.totalStock -= amount;
 
-    // Add to store
-    let storeItem = storeItems.find(storeItem => storeItem.productName === item.productName);
-    if (storeItem) {
-        storeItem.totalStock += amount;
-        storeItem.productPrice = price;
-        storeItem.totalPrice += price * amount; // Update total price in store
-    } else {
-        storeItem = {
-            productName: item.productName,
-            productType: item.productType,
-            totalStock: amount,
-            productPrice: price,
-            totalPrice: price * amount
-        };
-        storeItems.push(storeItem);
-    }
+            let storeItem = storeItems.find(storeItem => storeItem.productName === item.productName);
+            if (storeItem) {
+                storeItem.totalStock += amount;
+                storeItem.productPrice = price;
+                storeItem.totalPrice += price * amount;
+            } else {
+                storeItem = {
+                    productName: item.productName,
+                    productType: item.productType,
+                    totalStock: amount,
+                    productPrice: price,
+                    totalPrice: price * amount
+                };
+                storeItems.push(storeItem);
+            }
 
-    // Update local storage
-    localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
-    localStorage.setItem('store-stocks', JSON.stringify(storeItems));
-    loadWarehouseItems();
-    alert(`Successfully transferred ${amount} of ${item.productName} to store.`);
-}
-
+            localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
+            localStorage.setItem('store-stocks', JSON.stringify(storeItems));
+            loadWarehouseItems();
+            alert(`Successfully transferred ${amount} of ${item.productName} to store.`);
+        }
 
         document.getElementById('itemForm').addEventListener('submit', function(event) {
             event.preventDefault();
@@ -251,7 +248,6 @@
         document.getElementById('addNewProductBtn').addEventListener('click', function() {
             const newProduct = document.getElementById('newProductName').value.trim();
             if (newProduct) {
-                // Add new product to dropdown and local storage
                 if (!defaultProductNames.includes(newProduct)) {
                     defaultProductNames.push(newProduct);
                     localStorage.setItem('default-product-names', JSON.stringify(defaultProductNames));
@@ -262,6 +258,20 @@
                 document.getElementById('newProductName').value = '';
             } else {
                 alert('Please enter a product name to add.');
+            }
+        });
+
+        document.getElementById('deleteProductBtn').addEventListener('click', function() {
+            const selectedProduct = document.getElementById('productName').value.trim();
+            if (selectedProduct) {
+                if (confirm(`Are you sure you want to delete ${selectedProduct}?`)) {
+                    defaultProductNames = defaultProductNames.filter(name => name !== selectedProduct);
+                    localStorage.setItem('default-product-names', JSON.stringify(defaultProductNames));
+                    updateProductDropdowns();
+                    alert(`${selectedProduct} has been deleted.`);
+                }
+            } else {
+                alert('Please select a product to delete.');
             }
         });
 
@@ -289,8 +299,8 @@
               return;
             }
 
-            storeItem.totalStock -= transferAmount; // Update stock in store
-            storeItem.totalPrice += productPrice * transferAmount; // Update total price
+            storeItem.totalStock -= transferAmount;
+            storeItem.totalPrice += productPrice * transferAmount;
             
             const warehouseItem = warehouseItems.find(item => item.productName === productName);
             if (warehouseItem) {
