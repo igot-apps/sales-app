@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,59 +10,79 @@
       font-family: Arial, sans-serif;
       padding: 20px;
     }
+
+    .table-container {
+      max-height: 300px; /* Set a maximum height for scrolling */
+      overflow-y: auto; /* Enable vertical scrolling */
+      margin-top: 20px;
+      border: 1px solid #ddd; /* Optional: Add a border around the table */
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
     }
-    th, td {
+
+    th,
+    td {
       padding: 8px 12px;
       border: 1px solid #ddd;
       text-align: center;
     }
+
     th {
       background-color: #f2f2f2;
     }
+
+    #total-sales-summary {
+      margin: 20px 0;
+      text-align: right;
+    }
   </style>
 </head>
+
 <body>
   <h1>Sales Report</h1>
   <div>
     <h2>Average Quantity Sold per Item (per day) by Date</h2>
-    <table id="avg-quantity-report">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Item Name</th>
-          <th>Average Quantity (kg)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-container">
+      <table id="avg-quantity-report">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Item Name</th>
+            <th>Average Quantity (kg)</th>
+            <th>Total Sales ($)</th>
+          </tr>
+        </thead>
+        <tbody id="avg-quantity-body"></tbody>
+      </table>
+    </div>
+
+    <div id="total-sales-summary">
+      <h3>Total Sales per Day: <span id="total-sales-amount">$0.00</span></h3>
+    </div>
 
     <h2>Top Selling Items</h2>
-    <table id="top-selling-report">
-      <thead>
-        <tr>
-          <th>Item Name</th>
-          <th>Total Quantity Sold (kg)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-container">
+      <table id="top-selling-report">
+        <thead>
+          <tr>
+            <th>Item Name</th>
+            <th>Total Quantity Sold (kg)</th>
+          </tr>
+        </thead>
+        <tbody id="top-selling-body"></tbody>
+      </table>
+    </div>
 
-    <h2>Date-wise Sales Report</h2>
-    <table id="date-wise-report">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Item Name</th>
-          <th>Total Quantity Sold (kg)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    
+    <div>
+      <a href="localstorage.html">localStorage</a>
+      <a href="./inventory.html">inventory</a>
+      <a href="./warehouse.html">warehouse</a>
+      <a href="./report.html">report</a>
+      <a href="./index.html">index</a>
+    </div>
   </div>
 
   <script>
@@ -72,14 +93,23 @@
       // Function to parse receipt data and aggregate sales
       const aggregateSalesData = () => {
         const salesData = {};
+        const totalSalesPerDay = {}; // To track total sales per day
 
         receiptHistory.forEach(receipt => {
           const date = new Date(receipt.date);
-          const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`; // YYYY-MM-DD
+          const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`; // YYYY-MM-DD
+
+          // Initialize totalSales if not already
+          if (!totalSalesPerDay[formattedDate]) {
+            totalSalesPerDay[formattedDate] = 0;
+          }
+
+          // Add to total sales
+          totalSalesPerDay[formattedDate] += receipt.total;
 
           receipt.items.forEach(item => {
             if (!salesData[item.name]) {
-              salesData[item.name] = { totalQuantity: 0, totalPrice: 0, salesDates: {} };
+              salesData[item.name] = { totalQuantity: 0, salesDates: {} };
             }
 
             // Add quantities
@@ -88,13 +118,17 @@
 
             // Track daily sales
             if (!salesData[item.name].salesDates[formattedDate]) {
-              salesData[item.name].salesDates[formattedDate] = 0;
+              salesData[item.name].salesDates[formattedDate] = {
+                quantity: 0,
+                totalSales: 0
+              };
             }
-            salesData[item.name].salesDates[formattedDate] += quantity;
+            salesData[item.name].salesDates[formattedDate].quantity += quantity;
+            salesData[item.name].salesDates[formattedDate].totalSales += quantity * item.price; // Assuming price is provided in item
           });
         });
 
-        return salesData;
+        return { salesData, totalSalesPerDay };
       };
 
       // Function to calculate the average quantity sold per item per day (for each date)
@@ -104,8 +138,9 @@
         for (const item in salesData) {
           const itemData = salesData[item];
           for (const date in itemData.salesDates) {
-            const avgQuantity = itemData.salesDates[date]; // No need to divide since it's per day already
-            avgData.push({ date, name: item, avgQuantity });
+            const avgQuantity = itemData.salesDates[date].quantity; // No need to divide since it's per day already
+            const totalSales = itemData.salesDates[date].totalSales;
+            avgData.push({ date, name: item, avgQuantity, totalSales });
           }
         }
 
@@ -127,63 +162,34 @@
         return rankingData;
       };
 
-      // Function to generate Date-wise Sales Report
-      const generateDateWiseReport = () => {
-        const dateWiseData = {};
-
-        receiptHistory.forEach(receipt => {
-          const date = new Date(receipt.date);
-          const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`; // YYYY-MM-DD
-
-          receipt.items.forEach(item => {
-            if (!dateWiseData[formattedDate]) {
-              dateWiseData[formattedDate] = {};
-            }
-
-            if (!dateWiseData[formattedDate][item.name]) {
-              dateWiseData[formattedDate][item.name] = 0;
-            }
-
-            // Add quantities sold for this item on this date
-            dateWiseData[formattedDate][item.name] += parseFloat(item.quantity);
-          });
-        });
-
-        return dateWiseData;
-      };
-
       // Function to update the report tables
       const updateReportTables = () => {
-        const salesData = aggregateSalesData();
+        const { salesData, totalSalesPerDay } = aggregateSalesData();
         const avgQuantityData = calculateAverageQuantityPerDate(salesData);
         const topSellingData = rankTopSellingItems(salesData);
-        const dateWiseData = generateDateWiseReport();
 
         // Update Average Quantity Report (per date)
-        const avgQuantityTableBody = document.querySelector("#avg-quantity-report tbody");
+        const avgQuantityTableBody = document.getElementById("avg-quantity-body");
         avgQuantityData.forEach(item => {
           const row = document.createElement("tr");
-          row.innerHTML = `<td>${item.date}</td><td>${item.name}</td><td>${item.avgQuantity.toFixed(2)}</td>`;
+          row.innerHTML = `<td>${item.date}</td><td>${item.name}</td><td>${item.avgQuantity.toFixed(2)}</td><td>${item.totalSales.toFixed(2)}</td>`;
           avgQuantityTableBody.appendChild(row);
         });
 
+        // Calculate and display total sales per day
+        let totalSalesOverall = 0;
+        for (const date in totalSalesPerDay) {
+          totalSalesOverall += totalSalesPerDay[date];
+        }
+        document.getElementById("total-sales-amount").innerText = `$${totalSalesOverall.toFixed(2)}`;
+
         // Update Top Selling Report
-        const topSellingTableBody = document.querySelector("#top-selling-report tbody");
+        const topSellingTableBody = document.getElementById("top-selling-body");
         topSellingData.forEach(item => {
           const row = document.createElement("tr");
           row.innerHTML = `<td>${item.name}</td><td>${item.totalQuantity.toFixed(2)}</td>`;
           topSellingTableBody.appendChild(row);
         });
-
-        // Update Date-wise Sales Report
-        const dateWiseTableBody = document.querySelector("#date-wise-report tbody");
-        for (const date in dateWiseData) {
-          for (const item in dateWiseData[date]) {
-            const row = document.createElement("tr");
-            row.innerHTML = `<td>${date}</td><td>${item}</td><td>${dateWiseData[date][item].toFixed(2)}</td>`;
-            dateWiseTableBody.appendChild(row);
-          }
-        }
       };
 
       // Initialize the report
@@ -191,4 +197,5 @@
     });
   </script>
 </body>
+
 </html>

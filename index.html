@@ -416,7 +416,7 @@
                 return;
             }
     
-            if (label) {
+            
                 let sum = 0;
                 receiptItems.forEach(item => sum += item.price);
     
@@ -433,9 +433,7 @@
                 receiptItems = [];
                 renderReceipt();
                 document.getElementById('receiptLabel').value = '';
-            } else {
-                alert('Please provide a label for the receipt.');
-            }
+            
         }
     
         function renderReceiptHistory() {
