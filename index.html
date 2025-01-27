@@ -192,6 +192,7 @@
         function loadPersistedData() {
             const savedInventory = localStorage.getItem('store-stocks');
             const savedHistory = localStorage.getItem('receiptHistory');
+            const savedCurrentReceipt = localStorage.getItem('currentReceipt');
 
             if (savedInventory) {
                 try {
@@ -212,6 +213,17 @@
                     receiptHistory = [];
                 }
                 renderReceiptHistory();
+            }
+
+            // Load the current receipt if it exists
+            if (savedCurrentReceipt) {
+                try {
+                    receiptItems = JSON.parse(savedCurrentReceipt);
+                } catch (error) {
+                    console.error("Failed to parse current receipt data from localStorage", error);
+                    receiptItems = [];
+                }
+                renderReceipt();
             }
         }
 
@@ -382,6 +394,9 @@
             });
 
             document.getElementById('receiptTotal').textContent = `Total: GHS ${total.toFixed(2)}`;
+            
+            // Save current receipt to localStorage
+            localStorage.setItem('currentReceipt', JSON.stringify(receiptItems));
         }
 
         function returnToStore(item, index) {
