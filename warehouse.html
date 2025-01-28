@@ -42,11 +42,15 @@
         .error {
             color: red;
         }
+        .low-stock {
+            background-color: pink !important;
+        }
     </style>
 </head>
 <body>
 
     <h1>Warehouse Manager</h1>
+
     <form id="itemForm">
         <select id="productName" required>
             <option value="">Select Product Name</option>
@@ -61,11 +65,18 @@
         <button type="submit">Add Item</button>
         <button type="button" id="addNewProductBtn">Add New Product</button>
         <button type="button" id="deleteProductBtn">Delete Selected Product</button>
-
-        
-
-
     </form>
+
+    <form id="thresholdForm">
+        <input type="number" id="lowStockThreshold" placeholder="Low Stock Threshold" step="1" min="0">
+        <button type="button" id="setThresholdBtn">Set Threshold</button>
+    </form>
+    
+
+    <div>
+        <label for="lowStockThreshold">Low Stock Threshold:</label>
+        <input type="number" id="lowStockThreshold" placeholder="Enter low stock threshold" min="1">
+    </div>
 
     <div class="error" id="error-message"></div>
 
@@ -93,34 +104,40 @@
         <button type="submit">Transfer</button>
     </form>
 
-    
-
-
-    <div>
-        <a href="localstorage.html">localStorage</a>
-        <a href="./inventory.html">inventory</a>
-        <a href="./warehouse.html">warehouse</a>
-        <a href="./report.html">report</a>
-        <a href="./index.html">index</a>
-    </div>
+    <div id="navbar"></div>
 
     <script>
-        // Load existing product names from local storage or use defaults
-        let defaultProductNames = JSON.parse(localStorage.getItem('default-product-names')) || ["Chicken Back", "Yemuade", "Nat Sausage", "shark", "star fish", "moon fish"];
-        
-        // Load warehouse and store items from local storage
+        fetch("navbar.html")
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById("navbar").innerHTML = data;
+            });
+    </script>
+
+    <script>
+        let defaultProductNames = JSON.parse(localStorage.getItem('default-product-names')) || 
+        ["Chicken Back","Yemuade","Nat Sausage","Layer","Salmon","Tips","Wings","Rose","Gizzard","Feet","Kotojwie","H/m","Drum stick","Golden phonix"];
         let warehouseItems = JSON.parse(localStorage.getItem('warehouse-stocks')) || [];
         let storeItems = JSON.parse(localStorage.getItem('store-stocks')) || [];
-        
-        // Populate product name dropdowns
+        let lowStockThreshold = parseInt(localStorage.getItem('low-stock-threshold')) || 15;
+
+        const lowStockInput = document.getElementById('lowStockThreshold');
+        lowStockInput.value = lowStockThreshold;
+        lowStockInput.addEventListener('input', function () {
+            const newThreshold = parseInt(lowStockInput.value);
+            if (!isNaN(newThreshold)) {
+                lowStockThreshold = newThreshold;
+                localStorage.setItem('low-stock-threshold', lowStockThreshold);
+                loadWarehouseItems();
+            }
+        });
+
         const productNameSelect = document.getElementById('productName');
         const transferProductSelect = document.getElementById('transferProductName');
-        
+
         function updateProductDropdowns() {
             productNameSelect.innerHTML = '<option value="">Select Product Name</option>';
             transferProductSelect.innerHTML = '<option value="">Select Product</option>';
-            
-            // Add default products to dropdown
             defaultProductNames.forEach((productName) => {
                 const option = document.createElement('option');
                 option.value = productName;
@@ -132,202 +149,77 @@
                 transferOption.textContent = productName;
                 transferProductSelect.appendChild(transferOption);
             });
-
-            // Add warehouse items to dropdown
-            warehouseItems.forEach(item => addProductToDropdown(item.productName));
         }
 
-        // Add a product to the dropdowns
-        function addProductToDropdown(productName) {
-            const option = document.createElement('option');
-            option.value = productName;
-            option.textContent = productName;
-            productNameSelect.appendChild(option);
 
-            const transferOption = document.createElement('option');
-            transferOption.value = productName;
-            transferOption.textContent = productName;
-            transferProductSelect.appendChild(transferOption);
+// Set threshold button event listener
+document.getElementById('setThresholdBtn').addEventListener('click', () => {
+    const thresholdInput = document.getElementById('lowStockThreshold').value.trim();
+    const parsedThreshold = parseInt(thresholdInput, 10);
+
+    if (isNaN(parsedThreshold) || parsedThreshold < 0) {
+        alert('Please enter a valid threshold value.');
+        return;
+    }
+
+    lowStockThreshold = parsedThreshold;
+    localStorage.setItem('low-stock-threshold', lowStockThreshold);
+    loadWarehouseItems();
+    alert(`Low stock threshold set to ${lowStockThreshold}`);
+});
+
+// Updated loadWarehouseItems to include low stock flagging
+function loadWarehouseItems() {
+    const itemsTableBody = document.getElementById('itemsTableBody');
+    itemsTableBody.innerHTML = '';
+
+    warehouseItems.forEach((item) => {
+        const newRow = itemsTableBody.insertRow();
+        newRow.insertCell(0).textContent = item.productName;
+        newRow.insertCell(1).textContent = item.productType;
+        newRow.insertCell(2).textContent = item.totalStock;
+
+        const actionCell = newRow.insertCell(3);
+
+        const removeButton = document.createElement('button');
+        removeButton.textContent = 'Remove';
+        removeButton.onclick = () => removeItem(item);
+        actionCell.appendChild(removeButton);
+
+        const moveButton = document.createElement('button');
+        moveButton.textContent = 'Transfer to Store';
+        moveButton.onclick = () => transferToStore(item);
+        actionCell.appendChild(moveButton);
+
+        // Flag low stock items
+        if (item.totalStock <= lowStockThreshold) {
+            newRow.style.backgroundColor = 'pink';
         }
+    });
+}
 
-        function loadWarehouseItems() {
-            const itemsTableBody = document.getElementById('itemsTableBody');
-            itemsTableBody.innerHTML = '';
-
-            warehouseItems.forEach((item) => {
-                const newRow = itemsTableBody.insertRow();
-                newRow.insertCell(0).textContent = item.productName;
-                newRow.insertCell(1).textContent = item.productType;
-                newRow.insertCell(2).textContent = item.totalStock;
-
-                const actionCell = newRow.insertCell(3);
-                
-                const removeButton = document.createElement('button');
-                removeButton.textContent = 'Remove';
-                removeButton.onclick = () => removeItem(item);
-                actionCell.appendChild(removeButton);
-                
-                const moveButton = document.createElement('button');
-                moveButton.textContent = 'Transfer to Store';
-                moveButton.onclick = () => transferToStore(item);
-                actionCell.appendChild(moveButton);
-            });
-        }
 
         function removeItem(item) {
-            if (confirm(`Are you sure you want to remove ${item.productName} from the warehouse?`)) {
+            if (confirm(`Are you sure you want to remove ${item.productName}?`)) {
                 warehouseItems = warehouseItems.filter(i => i !== item);
                 localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
                 loadWarehouseItems();
             }
         }
 
-        function transferToStore(item) {
-            const amountToTransfer = parseFloat(prompt(`Enter amount for ${item.productName} (Available: ${item.totalStock}):`));
-            if (isNaN(amountToTransfer) || amountToTransfer <= 0 || amountToTransfer > item.totalStock) {
-                alert('Invalid amount entered. Please enter a number greater than 0 and within the available stock.');
-                return;
-            }
-
-            const productPrice = parseFloat(prompt(`Enter price for ${item.productName} per unit:`));
-            if (isNaN(productPrice) || productPrice <= 0) {
-                alert('Invalid price entered. Please enter a valid number greater than 0 for the product price.');
-                return;
-            }
-
-            item.totalStock -= amountToTransfer;
-
-            let storeItem = storeItems.find(storeItem => storeItem.productName === item.productName);
-            if (storeItem) {
-                storeItem.totalStock += amountToTransfer;
-                storeItem.productPrice = productPrice;
-                storeItem.totalPrice += productPrice * amountToTransfer;
-            } else {
-                storeItems.push({
-                    productName: item.productName,
-                    productType: item.productType,
-                    totalStock: amountToTransfer,
-                    productPrice: productPrice,
-                    totalPrice: productPrice * amountToTransfer
-                });
-            }
-
-            localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
-            localStorage.setItem('store-stocks', JSON.stringify(storeItems));
-            loadWarehouseItems();
-            alert(`Successfully transferred ${amountToTransfer} of ${item.productName} to store.`);
-        }
-
-
-        document.getElementById('itemForm').addEventListener('submit', function(event) {
+        document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
-
             const productName = document.getElementById('productName').value.trim();
             const productType = document.getElementById('productType').value.trim();
             const totalStock = parseFloat(document.getElementById('totalStock').value.trim());
-            const errorMessage = document.getElementById('error-message');
+            if (!productName || !productType || isNaN(totalStock) || totalStock <= 0) return;
 
-            errorMessage.textContent = '';
-
-            if (!productName || !productType || isNaN(totalStock) || totalStock <= 0) {
-                errorMessage.textContent = 'All fields are required and must have valid values!';
-                return;
-            }
-
-            const newItem = {
-                productName: productName,
-                productType: productType,
-                totalStock: totalStock
-            };
-
+            const newItem = { productName, productType, totalStock };
             warehouseItems.push(newItem);
             localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
             loadWarehouseItems();
-
-            document.getElementById('itemForm').reset();
-            document.getElementById('productName').selectedIndex = 0;
         });
 
-
-        document.getElementById('addNewProductBtn').addEventListener('click', function() {
-            const newProduct = document.getElementById('newProductName').value.trim();
-            if (newProduct) {
-                if (!defaultProductNames.includes(newProduct)) {
-                    defaultProductNames.push(newProduct);
-                    localStorage.setItem('default-product-names', JSON.stringify(defaultProductNames));
-                    updateProductDropdowns();
-                } else {
-                    alert('Product already exists in the list!');
-                }
-                document.getElementById('newProductName').value = '';
-            } else {
-                alert('Please enter a product name to add.');
-            }
-        });
-
-        document.getElementById('deleteProductBtn').addEventListener('click', function() {
-            const selectedProduct = document.getElementById('productName').value.trim();
-            if (selectedProduct) {
-                if (confirm(`Are you sure you want to delete ${selectedProduct}?`)) {
-                    defaultProductNames = defaultProductNames.filter(name => name !== selectedProduct);
-                    localStorage.setItem('default-product-names', JSON.stringify(defaultProductNames));
-                    updateProductDropdowns();
-                    alert(`${selectedProduct} has been deleted.`);
-                }
-            } else {
-                alert('Please select a product to delete.');
-            }
-        });
-
-        document.getElementById('transferForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const productName = document.getElementById('transferProductName').value.trim();
-            const transferAmount = parseInt(document.getElementById('transferAmount').value.trim(), 10);
-            const productPrice = parseFloat(document.getElementById('productPrice').value.trim());
-
-            const storeItem = storeItems.find(item => item.productName === productName);
-
-            if (!storeItem) {
-                alert('Item does not exist in store.');
-                return;
-            }
-
-            if (isNaN(transferAmount) || transferAmount <= 0 || transferAmount > storeItem.totalStock) {
-                alert(`Invalid amount entered. Available stock in store: ${storeItem.totalStock}`);
-                return;
-            }
-
-            if (isNaN(productPrice) || productPrice <= 0) {
-              alert("Invalid price entered. Please enter a valid price for the product.");
-              return;
-            }
-
-            storeItem.totalStock -= transferAmount;
-            storeItem.totalPrice += productPrice * transferAmount;
-            
-            const warehouseItem = warehouseItems.find(item => item.productName === productName);
-            if (warehouseItem) {
-                warehouseItem.totalStock += transferAmount;
-            } else {
-                warehouseItems.push({
-                    productName: productName,
-                    productType: storeItem.productType,
-                    totalStock: transferAmount,
-                    productPrice: productPrice,
-                    totalPrice: productPrice * transferAmount
-                });
-            }
-
-            localStorage.setItem('store-stocks', JSON.stringify(storeItems));
-            localStorage.setItem('warehouse-stocks', JSON.stringify(warehouseItems));
-
-            alert(`Successfully transferred ${transferAmount} of ${productName} to warehouse.`);
-            loadWarehouseItems();
-            document.getElementById('transferForm').reset();
-        });
-
-        // Load initial data
         updateProductDropdowns();
         loadWarehouseItems();
     </script>
