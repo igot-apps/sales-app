@@ -186,35 +186,36 @@
     });
 
     function renderInventory(searchTerm = '') {
-        const tableBody = document.querySelector('#inventoryTable tbody');
-        tableBody.innerHTML = '';
+    const tableBody = document.querySelector('#inventoryTable tbody');
+    tableBody.innerHTML = '';
 
-        const filteredInventory = inventory.filter(item => 
-            item.productName.toLowerCase().includes(searchTerm)
-        );
+    const filteredInventory = inventory.filter(item => 
+        item.productName.toLowerCase().includes(searchTerm)
+    );
 
-        filteredInventory.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${item.productName}</td>
-                <td>${item.productType === 'Scaled' ? 'Scaled (Kg)' : 'Unscaled (Units)'}</td>
-                <td>${item.productPrice.toFixed(2)}</td>
-                <td>${item.totalStock.toFixed(2)}</td>
-                <td>${item.productName}<br/><input type="number" min="0" placeholder="GHS" id="purchaseAmount${index}"></td>
-                <td>
-                    <button data-index="${index}" class="add-to-receipt-btn">Add to Receipt</button>
-                    <button class="transfer-btn" onclick="prepareTransfer(${index})">Transfer</button>
-                </td>
-            `;
-            tableBody.appendChild(row);
+    filteredInventory.forEach((item) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.productName}</td>
+            <td>${item.productType === 'Scaled' ? 'Scaled (Kg)' : 'Unscaled (Units)'}</td>
+            <td>${item.productPrice.toFixed(2)}</td>
+            <td>${item.totalStock.toFixed(2)}</td>
+            <td>${item.productName}<br/><input type="number" min="0" placeholder="GHS" id="purchaseAmount-${item.productName}"></td>
+            <td>
+                <button data-productname="${item.productName}" class="add-to-receipt-btn">Add to Receipt</button>
+                <button class="transfer-btn" onclick="prepareTransfer('${item.productName}')">Transfer</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    document.querySelectorAll('.add-to-receipt-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            sellItem(this.getAttribute('data-productname'));
         });
+    });
+}
 
-        document.querySelectorAll('.add-to-receipt-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                sellItem(this.getAttribute('data-index'));
-            });
-        });
-    }
 
         
 
@@ -240,9 +241,9 @@
             document.getElementById('productStock').value = '';
         }
 
-        function sellItem(index) {
-            const item = inventory[index];
-            const purchaseAmountInput = document.getElementById(`purchaseAmount${index}`);
+        function sellItem(productName) {
+            const item = inventory.find(i => i.productName === productName);
+            const purchaseAmountInput = document.getElementById(`purchaseAmount-${productName}`);
             const purchaseAmount = parseFloat(purchaseAmountInput.value);
 
             if (!isNaN(purchaseAmount) && purchaseAmount > 0) {
@@ -267,8 +268,9 @@
             }
         }
 
-        function prepareTransfer(index) {
-            const item = inventory[index];
+
+        function prepareTransfer(productName) {
+            const item = inventory.find(i => i.productName === productName);
             const transferAmount = prompt(`Enter the quantity to transfer for ${item.productName} (Available: ${item.totalStock}):`);
             const amount = parseFloat(transferAmount);
 
@@ -296,6 +298,7 @@
                 alert('Invalid transfer amount.');
             }
         }
+
 
         function renderReceipt() {
             const receiptList = document.getElementById('receiptItems');
