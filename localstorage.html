@@ -5,78 +5,212 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LocalStorage Viewer</title>
     <style>
+        .table-container {
+            max-height: 300px; /* Set the maximum height for the table container */
+            overflow-y: auto; /* Add vertical scrolling */
+            overflow-x: auto; /* Add horizontal scrolling if needed */
+            border: 1px solid #ccc; /* Optional: Add a border for visual clarity */
+            border-radius: 5px; /* Optional: Rounded corners */
+        }
+    
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+    
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+    
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+    </style>
+    
+    <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
+            margin: 0;
+            padding: 0;
             background-color: #f4f4f4;
-            border-radius: 8px;
         }
+
         h1 {
             text-align: center;
+            padding: 20px;
+            background-color: #007BFF;
+            color: white;
+            margin: 0;
         }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
         form {
             margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
+
         input {
-            margin: 5px;
             padding: 10px;
-            width: calc(50% - 16px);
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
+
         button {
             padding: 10px;
-            margin-left: 5px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
+
         table, th, td {
             border: 1px solid #ccc;
         }
+
         th, td {
             padding: 10px;
             text-align: left;
         }
+
         th {
             background-color: #007BFF;
             color: white;
         }
+
         .error {
             color: red;
+            margin-bottom: 10px;
+        }
+
+        #editForm {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-bar {
+            display: flex;
+            justify-content: space-around;
+            background-color: #007BFF;
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        .nav-bar a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .nav-bar a:hover {
+            text-decoration: underline;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .actions button {
+            background-color: #28a745;
+        }
+
+        .actions button:hover {
+            background-color: #218838;
+        }
+        
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            table, th, td {
+                font-size: 14px;
+            }
+
+            button {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
-
     <h1>LocalStorage Viewer</h1>
-    <form id="storageForm">
-        <input type="text" id="key" placeholder="Enter key" required>
-        <input type="text" id="value" placeholder="Enter value" required>
-        <button type="submit">Add to LocalStorage</button>
-    </form>
+    <div class="container">
+        <form id="storageForm">
+            <input type="text" id="key" placeholder="Enter key" required>
+            <input type="text" id="value" placeholder="Enter value" required>
+            <button type="submit">Add to LocalStorage</button>
+        </form>
 
-    <div class="error" id="error-message"></div>
+        <div class="error" id="error-message"></div>
 
-    <table id="storageTable">
-        <thead>
-            <tr>
-                <th>Key</th>
-                <th>Value</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="storageTableBody">
-            <!-- Stored items will appear here -->
-        </tbody>
-    </table>
+        <div class="table-container">
+            <table id="storageTable">
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="storageTableBody">
+                    <!-- Stored items will appear here -->
+                </tbody>
+            </table>
+        </div>
+        
 
-    <div id="editForm" style="display: none;">
-        <input type="hidden" id="editKey" value="">
-        <input type="text" id="editValue" value="" placeholder="Enter new value">
-        <button type="button" id="saveChanges">Save Changes</button>
-        <button type="button" id="cancelChanges">Cancel</button>
+        <div class="actions">
+            <button id="exportButton">Export</button>
+            <button id="importButton">Import</button>
+            <button id="copyButton">Copy</button>
+        </div>
+
+        <div id="editForm" style="display: none;">
+            <input type="hidden" id="editKey" value="">
+            <input type="text" id="editValue" placeholder="Enter new value">
+            <button type="button" id="saveChanges">Save Changes</button>
+            <button type="button" id="cancelChanges">Cancel</button>
+        </div>
+    </div>
+
+    <div class="nav-bar">
+        <a href="localstorage.html">localStorage</a>
+        <a href="./inventory.html">Inventory</a>
+        <a href="./warehouse.html">Warehouse</a>
+        <a href="./report.html">Report</a>
+        <a href="./index.html">Index</a>
     </div>
 
     <script>
@@ -86,14 +220,14 @@
         const editForm = document.getElementById('editForm');
         const saveChangesButton = document.getElementById('saveChanges');
         const cancelChangesButton = document.getElementById('cancelChanges');
+        const exportButton = document.getElementById('exportButton');
+        const importButton = document.getElementById('importButton');
+        const copyButton = document.getElementById('copyButton');
+
         let currentKeyToEdit = '';
 
-        // Function to display all localStorage items in the table
         function displayLocalStorage() {
-            // Clear existing rows
             storageTableBody.innerHTML = '';
-
-            // Loop through all localStorage items
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
                 const value = localStorage.getItem(key);
@@ -101,23 +235,21 @@
                 newRow.insertCell(0).textContent = key;
                 newRow.insertCell(1).textContent = value;
 
-                // Add update button
                 const updateButton = document.createElement('button');
                 updateButton.textContent = 'Update';
-                updateButton.onclick = function() {
+                updateButton.onclick = function () {
                     editForm.style.display = 'block';
                     document.getElementById('editKey').value = key;
                     document.getElementById('editValue').value = value;
-                    currentKeyToEdit = key; // Store the key for editing
+                    currentKeyToEdit = key;
                 };
                 newRow.insertCell(2).appendChild(updateButton);
 
-                // Add delete button
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Delete';
                 deleteButton.style.backgroundColor = 'pink';
                 deleteButton.style.color = 'white';
-                deleteButton.onclick = function() {
+                deleteButton.onclick = function () {
                     localStorage.removeItem(key);
                     displayLocalStorage();
                 };
@@ -125,46 +257,67 @@
             }
         }
 
-        // Add event listener for the form submission
-        storageForm.addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent form submission
-
+        storageForm.addEventListener('submit', function (event) {
+            event.preventDefault();
             const key = document.getElementById('key').value.trim();
             const value = document.getElementById('value').value.trim();
-
-            // Clear previous error message
             errorMessage.textContent = '';
-
-            // Basic validation
             if (!key || !value) {
                 errorMessage.textContent = 'Both key and value are required!';
                 return;
             }
-
-            // Store key-value pair in localStorage
             localStorage.setItem(key, value);
-
-            // Reset form
             storageForm.reset();
-
-            // Display all localStorage items
             displayLocalStorage();
         });
 
-        // Save changes to localStorage
-        saveChangesButton.addEventListener('click', function() {
+        saveChangesButton.addEventListener('click', function () {
             const editValue = document.getElementById('editValue').value.trim();
             localStorage.setItem(currentKeyToEdit, editValue);
             displayLocalStorage();
             editForm.style.display = 'none';
         });
 
-        // Cancel changes
-        cancelChangesButton.addEventListener('click', function() {
+        cancelChangesButton.addEventListener('click', function () {
             editForm.style.display = 'none';
         });
 
-        // Display items on page load
+        exportButton.addEventListener('click', function () {
+            const data = JSON.stringify(localStorage);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'localstorage.json';
+            a.click();
+        });
+
+        importButton.addEventListener('click', function () {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = function (event) {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const data = JSON.parse(e.target.result);
+                    for (const key in data) {
+                        localStorage.setItem(key, data[key]);
+                    }
+                    displayLocalStorage();
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        });
+
+        copyButton.addEventListener('click', function () {
+            const data = JSON.stringify(localStorage, null, 2);
+            navigator.clipboard.writeText(data).then(() => {
+                alert('LocalStorage data copied to clipboard!');
+            });
+        });
+
         displayLocalStorage();
     </script>
 </body>
